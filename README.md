@@ -151,6 +151,9 @@ results in
 
 Accessors
 ----------
+Because the result is not a pure multidimensional array, filter() does not work.  However, the syntax for direct access and for retrieving arrays is very straightforward.
+I intend to write a filter method in the near future
+
 ```javascript
 result.xml.a[0].b[1]._t;    //returns: "two"
 result.xml.a[0].c[0]._at.id._t; // returns: "3"
