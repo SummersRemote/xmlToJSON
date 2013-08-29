@@ -3,16 +3,15 @@ var xmlToJSON = {};									// create a namespace
 xmlToJSON.Parser = (function() {							// declare the object, Parser
 
 
-	// options
-	options = {
-		 parseCDATA : false,						//   extract cdata blocks, results in an array of text and cdata blocks
-		 trim : false,							//   trim leading and trailing whitespace in text nodes
-		 normalize: true,						//   collapse multiple spaces to single space
-		 namespaceKey : '_ns',						//   namespaces,
-		 attributeKey : '_at',						//   attributes, and
-		 textKey : '_t',						//   text,
-		 valueKey : '_v',						//   attribute values, and
-	 }
+	options = {				// set up the default options
+		 parseCDATA : false,		//   extract cdata blocks, results in an array of text and cdata blocks
+		 trim : false,			//   trim leading and trailing whitespace in text nodes
+		 normalize: true,		//   collapse multiple spaces to single space
+		 namespaceKey : 'ns',		//   tag name for namespace objects, default = '_ns'
+		 attributeKey : 'at',		//   tag name for the attributes list, default = '_at'
+		 textKey : 'text',		//   tag name for text values, default = '_t'
+		 valueKey : 'value',		//   tag name for attribute values, default = '_t'
+	}
 
     var parserConstructor = function Parser(opt) {				// with a constructor to return (see end of function)
         if(false === (this instanceof Parser)) {
