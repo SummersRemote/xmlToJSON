@@ -51,6 +51,22 @@ There aren't any options, as of right now.  Simple instantiate the parser and us
 }
 ```
 
+Options
+-------
+In the name of simplicity, there are only a few options available.  If no options are passed to the parse, defaults are used.
+```javascript
+options = {
+	 namespaceKey : '$ns',		// tag name for namespace objects, default = '_ns'
+	 attributeKey : '$at',		// tag name for the attributes list, default = '_at'		
+	 textKey : 'text',					 // tag name for text values, default = '_t'
+	 valueKey : 'value',				// tag name for attribute values, default = '_t'
+	 cdataKey : 'cdata'					// tag name for cdata blocks, default = '_c'
+ }
+
+var parser = new xmlToJSON.Parser(options);
+result = parser.parseString(xmlString);
+```
+
 Notes on Notation
 ------------------
 * The root node of the XML will be the root tag name
