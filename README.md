@@ -72,6 +72,7 @@ Notes on Notation
 * The root node of the XML will be the root tag name
 * Child elements are represented as arrays (supports multiple children with the same name).  This requires the use of array index selectors, but it's easy!
 * Prefixes are thrown out - all tag names use the corresponding local name
+* The default namespace attribute will have the name 'xmlns'.  It's value will equal the namespaceKey value for the element (see example below).
 * Namespaces URIs are stored in the namespaceKey
 * Node text is stored in the textKey
 * Attributes are stored in the attributeKey.  Its not an array, so each member remains accessible by dot notation.
