@@ -97,14 +97,14 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 					for(var key in nodeTmp) break;			// get it's tag name
 
 					if (options.parseCDATA) {					// if we are parsing cdata blocks
-						if (nodeTmp[key][options.textKey]) 		 	// and data exists
+						if (nodeTmp[key][options.textKey]) 	{	 	// and data exists
 							nodeTmp[key][options.textKey].push(text);	// append the new data
 						} else {
 							nodeTmp[key][options.textKey] =
 								nodeTmp[key][options.textKey] = [text];	// otherwise, add it
 						}
 					} else {
-						if (nodeTmp[key][options.textKey]) 			// if there is already some text (skipping cdata)
+						if (nodeTmp[key][options.textKey]) 	{		// if there is already some text (skipping cdata)
 							nodeTmp[key][options.textKey] =
 								nodeTmp[key][options.textKey]+ text;	// append the new text value
 						} else {
@@ -148,3 +148,18 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 
     return parserConstructor;								// returns the Parser object mentioned earlier
 }());
+
+// avail - "use or take advantage of (an opportunity or available resource)."
+// takes an expression as a string and tests it inside of a try-catch block.
+// if the expression succeeds, the expression is evaluated in the current scope and the value returned
+// if the expression fails (and throws an error), null will be returned
+// this allows compact syntax for nested accessors without a-priori knowledge of the structure
+// e.g.
+//	  val = avail('xml.a[0].b[0].text') || 'no value found';
+function avail(objString) {
+	try {
+		return eval(objString);
+	} catch (err) {
+		return null;
+	}
+};
