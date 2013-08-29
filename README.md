@@ -20,7 +20,7 @@ xmlToJSON may not solve all of your woes, but it solved mine :)
 Installation
 ------------
 1. [Download sax.js](https://raw.github.com/isaacs/sax-js/master/lib/sax.js).
-2. [Download xmlToJSON.js](https://raw.github.com/metatribal/xmlToJSON/master/xmlToJSON.js)
+2. [Download xmlToJSON.js](https://raw.github.com/metatribal/xmlToJSON/master/xmlToJSON.js).
 3. Include them both in your html.
  
 ```
