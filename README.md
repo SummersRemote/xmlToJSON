@@ -29,7 +29,7 @@ Installation
 ```
 <script type="text/javascript" src="path/xmlToJSON.js"></script>
  ```
-4. Enjoy!
+Enjoy!
  ```javascript
   xmlString = '<xml><a>It Works!</a></xml>';  // an xml string
 
