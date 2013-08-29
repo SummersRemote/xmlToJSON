@@ -72,10 +72,11 @@ Notes on Notation
 * The root node of the XML will be the root tag name
 * Child elements are represented as arrays (supports multiple children with the same name).  This requires the use of array index selectors, but it's easy!
 * Prefixes are thrown out - all tag names use the corresponding local name
-* Namespaces URIs are stored in the _ns object
-* Node text and attribute values are stored in the _t object
-* Attributes are stored in the _at object.  Its not an array, so each member remains accessible by dot notation.
-* CDATA is stored in the _c object
+* Namespaces URIs are stored in the namespaceKey
+* Node text is stored in the textKey
+* Attributes are stored in the attributeKey.  Its not an array, so each member remains accessible by dot notation.
+* Attribute value are stored in the valuKey
+* CDATA is stored in the cdataKey
 
 A more complicated example (with namespaces, attributed, and cdata)
 ```xml
