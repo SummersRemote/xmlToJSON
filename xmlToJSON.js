@@ -7,7 +7,7 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 	options = {
 		 parseCDATA : false,						//   extract cdata blocks, results in an array of text and cdata blocks
 		 trim : false,							//   trim leading and trailing whitespace in text nodes
-		 normalize: true,						//	 collapse multiple spaces to single space
+		 normalize: true,						//   collapse multiple spaces to single space
 		 namespaceKey : '_ns',						//   namespaces,
 		 attributeKey : '_at',						//   attributes, and
 		 textKey : '_t',						//   text,
