@@ -2,22 +2,29 @@ var xmlToJSON = {};									// create a namespace
 
 xmlToJSON.Parser = (function() {							// declare the object, Parser
 
-    var parserConstructor = function Parser() {						// with a constructor to return (see end of function)
+	options = {									// default options
+		 namespaceKey : '_ns',							//   namespaces,
+		 attributeKey : '_at',							//   attributes, and
+		 textKey : '_t',							//   text,
+		 valueKey : '_v',							//   attribute values, and
+		 cdataKey : '_c'							//   cdata
+	 }
+
+    var parserConstructor = function Parser(opt) {					// with a constructor to return (see end of function)
         if(false === (this instanceof Parser)) {
             return new Parser();							// it doesn't do anything, but gives an object to provide method upon
         }
+
+		//initialize options
+		for (key in opt) {
+			options[key] = opt[key];
+		}
     }
 
     parserConstructor.prototype.parseString = function (xmlString) {			// such as this one!  add parseString method to the Parser object
 
 			parser = sax.parser(true, {xmlns: true, trim: true});		// get an instance of the sax.js parser
 			stack = [];							// create an empty array to hold and collapse objects
-
-											// some tag identifiers for various xml bits, such as
-			namespaceKey = '_ns';						//   namespaces,
-			attributeKey = '_at';						//   attributes, and
-			textKey = '_t';							//   text (also used for attribute values), and
-			cdataKey = '_c';						//   cdata
 
 			// sax.js functions begin here
 			parser.onopentag = function (node) {
@@ -26,17 +33,17 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 		  		name = node.name;					// tag name to use for this node (default)
 		  		if (node.uri) {						// test for namespaces
 		  			name = node.local;				// switch tag name to local part (no prefixes in tags)
-					data[namespaceKey] = node.uri;			// set the namespace as well
+					data[options.namespaceKey] = node.uri;		// set the namespace as well
 				}
 
 				if (!isEmpty(node.attributes) ) {			// do we have an attributes?
-					data[attributeKey] = {};			// create an empty data object for them
+					data[options.attributeKey] = {};		// create an empty data object for them
 					for (attr in node.attributes) {			// iterate over the attribute names
 						attrTmp = stack.pop();			// pop the attribute object from the stack
 											//	sax.js encounters attributes ahead of open tags
 											//	so, we created them in the "onattribute" method
 						for(var key in attrTmp) break;		// neat trick to fetch the first tag name
-						data[attributeKey][key] = attrTmp[key];	// set the attribute
+						data[options.attributeKey][key] = attrTmp[key];	// set the attribute
 					}
 				}
 				nodeTmp[name] = data;					// copy the data into the node object
@@ -64,17 +71,18 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 			};
 
 			parser.onattribute = function (attr) {
-
 		  	  		attrTmp = {};					// attribute object
 		 			data = {};					// attribute data
 		 			name = attr.name;				// tag name to use for this attribute (default)
+
 		 			if (attr.uri) {					// test for namespaces
-		 				if (name != 'xmlns') {			// if the attribute is not the default namespace (has uri, no local)
+		 				if (name != 'xmlns') {			// if the attribute is not the default namespace
 		 					name = attr.local;		// switch tag name to local part (no prefixes in tags)
 						}
-						data[namespaceKey] = attr.uri;  	// set the namespace as well
+						data[options.namespaceKey] = attr.uri;  // set the namespace as well
 					}
-					data[textKey] = attr.value;			// set the value of the attribute
+					data[options.valueKey] = attr.value;		// set the value of the attribute
+
 
 					attrTmp[name] = data;				// copy the data into the attribute object
 					stack.push(attrTmp);				// and push it to the stack
@@ -84,7 +92,7 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 				if (stack.length > 0) {					// make sure there is at least one object on the stack
 					nodeTmp = stack.pop();				// get the object
 					for(var key in nodeTmp) break;			// get it's tag name
-					nodeTmp[key][textKey] = text;			// set the text value of the node
+					nodeTmp[key][options.textKey] = text;		// set the text value of the node
 					stack.push(nodeTmp);				// push the updated object back to the stack
 				}
 			};
@@ -93,7 +101,7 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 				if (stack.length > 0) {					// make sure there is at least one object on the stack
 					nodeTmp = stack.pop();				// get the object
 					for(var key in nodeTmp) break;			// get it's tag name
-					nodeTmp[key][cdataKey] = cdata;			// set the text value of the node
+					nodeTmp[key][options.cdataKey] = cdata;		// set the text value of the node
 					stack.push(nodeTmp);				// push the updated object back to the stack
 				}
 			};
