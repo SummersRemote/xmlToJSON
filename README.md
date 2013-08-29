@@ -79,7 +79,7 @@ results in
     "xml": {
         "_ns": "http://default.namespace.uri", 
         "_at": {
-            "": {
+            "xmlns": {
                 "_ns": "http://www.w3.org/2000/xmlns/", 
                 "_t": "http://default.namespace.uri"
             }
