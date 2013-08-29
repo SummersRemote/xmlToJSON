@@ -69,7 +69,9 @@ xmlToJSON.Parser = (function() {							// declare the object, Parser
 		 			data = {};					// attribute data
 		 			name = attr.name;				// tag name to use for this attribute (default)
 		 			if (attr.uri) {					// test for namespaces
-		 				name = attr.local;			// switch tag name to local part (no prefixes in tags)
+		 				if (name != 'xmlns') {			// if the attribute is not the default namespace (has uri, no local)
+		 					name = attr.local;		// switch tag name to local part (no prefixes in tags)
+						}
 						data[namespaceKey] = attr.uri;  	// set the namespace as well
 					}
 					data[textKey] = attr.value;			// set the value of the attribute
