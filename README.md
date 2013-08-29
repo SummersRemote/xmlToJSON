@@ -6,9 +6,9 @@ A simple javascript utility for converting xml into json with support for namesp
 Features
 * only one tiny, lightweight dependency, [sax.js](https://github.com/isaacs/sax-js)
 * small, could be minified along with sax.js to be even smaller (~19kb combined)
-* simple parsing.  pass a string, get back a javascipt object
+* simple parsing.  pass a string, get back a javascipt object ( use JSON.stringify(obj) to get the string representation )
 * supports atrributes, text, cdata, namespaces, default namespaces, attributes with namespaces
-* lots of inline comments (github keeps messing with the formatting though.  sorry)
+* lots of inline comments (github keeps messing with the formatting though. )
 
 Parsing XML with javascript remains one of the great difficulties of writing web applications.
 Most methods are limited by such things as poor browser support, poor or non-existent namespace support, poor attribute handling, difficult to use or bloated.
@@ -56,11 +56,11 @@ Options
 In the name of simplicity, there are only a few options available.  If no options are passed to the parse, defaults are used.
 ```javascript
 options = {
-	 namespaceKey : '$ns',		// tag name for namespace objects, default = '_ns'
-	 attributeKey : '$at',		// tag name for the attributes list, default = '_at'		
-	 textKey : 'text',					 // tag name for text values, default = '_t'
-	 valueKey : 'value',				// tag name for attribute values, default = '_t'
-	 cdataKey : 'cdata'					// tag name for cdata blocks, default = '_c'
+	 namespaceKey : 'ns',		// tag name for namespace objects, default = '_ns'
+	 attributeKey : 'at',		// tag name for the attributes list, default = '_at'		
+	 textKey : 'text',		// tag name for text values, default = '_t'
+	 valueKey : 'value',		// tag name for attribute values, default = '_t'
+	 cdataKey : 'cdata'		// tag name for cdata blocks, default = '_c'
  }
 
 var parser = new xmlToJSON.Parser(options);
