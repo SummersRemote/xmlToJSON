@@ -134,9 +134,9 @@ results in
 Accessors
 ----------
 ```javascript
-console.debug(result.xml.a[0].b[1]._t);  //returns: "two"
-console.debug(result.xml.a[0].c[0]._at.id._t); // returns: "3"
-console.debug(result.xml.a[0].b); // returns an array of all children of 'a' named 'b' (prettified below)
+result.xml.a[0].b[1]._t;    //returns: "two"
+result.xml.a[0].c[0]._at.id._t; // returns: "3"
+result.xml.a[0].b;          // returns an array of all children of 'a' named 'b' (prettified below)
 
 [
     {
