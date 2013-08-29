@@ -24,16 +24,16 @@ Installation
 3. Include them both in your html.
  ```
 <script type="text/javascript" src="path/sax.js"></script>
+```
+```
 <script type="text/javascript" src="path/xmlToJSON.js"></script>
  ```
 4. Enjoy!
  ```javascript
-<script type="text/javascript">
   xmlString = '<xml><a>It Works!</a></xml>';  // an xml string
 
   var parser = new xmlToJSON.Parser();  // instantiate the parser
   result = parser.parseString(xmlTest8);   // parse!
-</script>
  ```
  The (prettified) result of the above code is
  ```javascript
