@@ -15,7 +15,7 @@ Most methods are limited by such things as poor browser support, poor or non-exi
 
 The most effective solutions usually involve converting the XML to JSON, and indeed there are several libraries for that.  However, many of them suffer from poor/incomplete representation especially with regard to namespaces and attributes.
 
-xmlTOJSON may not solve all of your woes, but it solved mine :)
+xmlToJSON may not solve all of your woes, but it solved mine :)
 
 Installation
 ------------
