@@ -22,7 +22,8 @@ Installation
 1. [download sax.js](https://raw.github.com/isaacs/sax-js/master/lib/sax.js).
 2. [Download xmlToJSON.js](https://raw.github.com/metatribal/xmlToJSON/master/xmlToJSON.js)
 3. Include them both in your html.
- ```
+ 
+```
 <script type="text/javascript" src="path/sax.js"></script>
 ```
 ```
@@ -134,7 +135,7 @@ Accessors
 console.debug(result.xml.a[0].b[1]._t);  //returns: "two"
 console.debug(result.xml.a[0].c[0]._at.id._t); // returns: "3"
 console.debug(result.xml.a[0].b); // returns an array of all children of 'a' named 'b' (prettified below)
-/*
+
 [
     {
         "_ns": "http://default.namespace.uri", 
@@ -156,7 +157,7 @@ console.debug(result.xml.a[0].b); // returns an array of all children of 'a' nam
         "_t": "two"
     }
 ]
-*/
+
 ```
 
  
