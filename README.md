@@ -31,7 +31,7 @@ Installation
  ```
 Usage
 -----
-There aren't any options, as of right now.  Simple instantiate the parser and use.
+To get started, Simply instantiate the parser and use.
  ```javascript
   var parser = new xmlToJSON.Parser();         // instantiate the parser
 
@@ -53,15 +53,17 @@ There aren't any options, as of right now.  Simple instantiate the parser and us
 
 Options
 -------
-In the name of simplicity, there are only a few options available.  If no options are passed to the parse, defaults are used.
+There are only a few options available.  If no options are passed to the parse, defaults are used.
 ```javascript
 options = {
+	 parseCDATA : false,		// extract cdata blocks, results in an array of text and cdata blocks
+	 trim : false,			// trim leading and trailing whitespace in text nodes
+	 normalize: true,		// collapse multiple spaces to single space
 	 namespaceKey : 'ns',		// tag name for namespace objects, default = '_ns'
-	 attributeKey : 'at',		// tag name for the attributes list, default = '_at'		
+	 attributeKey : 'at',		// tag name for the attributes list, default = '_at'
 	 textKey : 'text',		// tag name for text values, default = '_t'
 	 valueKey : 'value',		// tag name for attribute values, default = '_t'
-	 cdataKey : 'cdata'		// tag name for cdata blocks, default = '_c'
- }
+}	
 
 var parser = new xmlToJSON.Parser(options);
 result = parser.parseString(xmlString);
