@@ -29,12 +29,14 @@ Installation
 ```
 <script type="text/javascript" src="path/xmlToJSON.js"></script>
  ```
-Enjoy!
+Usage
+-----
+There aren't any options, as of right now.  Simple instantiate the parser and use.
  ```javascript
-  xmlString = '<xml><a>It Works!</a></xml>';  // an xml string
+  var parser = new xmlToJSON.Parser();         // instantiate the parser
 
-  var parser = new xmlToJSON.Parser();  // instantiate the parser
-  result = parser.parseString(xmlTest8);   // parse!
+  testString = '<xml><a>It Works!</a></xml>';  // get some xml
+  result = parser.parseString(testString);     // parse!
  ```
  The (prettified) result of the above code is
  ```javascript
