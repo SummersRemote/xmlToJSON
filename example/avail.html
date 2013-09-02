@@ -8,42 +8,47 @@
 
 <script type='text/javascript'>
 
-  "mydata": {
-        "testString": "the quick brown fox", 
-        "testNumber": 42, 
-        "testBoolean": true, 
-        "testArray": [
-            {
-                "a": 1, 
-                "b": 2
-            }, 
-            {
-                "a": 3, 
-                "b": 4
-            }, 
-            {
-                "a": 5, 
-                "b": 6
-            }
-        ], 
-        "testObject": {
+    "testData": {
+        "test-1": {
+            "name": "Simple Object Tests", 
             "a": {
                 "name": "Bob", 
-                "age": 8
+                "age": 30, 
+                "married": true
             }, 
             "b": {
                 "name": "Jenny", 
-                "age": 10
+                "age": 28, 
+                "married": true
             }, 
             "c": {
                 "name": "Mike", 
-                "age": 12
+                "age": 12, 
+                "married": false
             }
         }, 
-        "deepObject": {
-            "sub-1": {
-                "sub-2": {
-                    "sub-3": [
+        "test-2": {
+            "name": "Array Tests", 
+            "array-A": [
+                {
+                    "item": "hats", 
+                    "qty": 2
+                }, 
+                {
+                    "item": "coats", 
+                    "qty": 4
+                }, 
+                {
+                    "item": "backpacks", 
+                    "qty": 3
+                }
+            ]
+        }, 
+        "test-3": {
+            "name": "Deep Object Test", 
+            "level-1": {
+                "level-2": {
+                    "level-3": [
                         {
                             "deep": "deep 1", 
                             "deeper": "deeper 1", 
@@ -64,8 +69,6 @@
             }
         }
     }
-
-
 
 
 
