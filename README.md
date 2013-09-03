@@ -1,6 +1,8 @@
 xmlToJSON
 =========
 
+Outdated - this will be replaced with a lighter, faster version within a few days.
+
 A simple javascript utility for converting xml into json with support for namespaces and attributes.
 
 Features
