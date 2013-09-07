@@ -1,16 +1,14 @@
-xmlToJSON
+xmlToJSON (updated Sept 6, 2013)
 =========
 
-Outdated - this will be replaced with a lighter, faster version within a few days. - Sept 2, 2013
-
-A simple javascript utility for converting xml into json with support for namespaces and attributes.
+A simple javascript utility for converting xml into json.
 
 Features
-* only one tiny, lightweight dependency, [sax.js](https://github.com/isaacs/sax-js)
-* small, could be minified along with sax.js to be even smaller (~19kb combined)
+* no external dependencies
+* small (~3kb minified)
 * simple parsing.  pass a string, get back a javascipt object ( use JSON.stringify(obj) to get the string representation )
-* supports atrributes, text, cdata, namespaces, default namespaces, attributes with namespaces
-* lots of inline comments (github keeps messing with the formatting though. )
+* supports atrributes, text, cdata, namespaces, default namespaces, attributes with namespaces, you get the idea
+* plenty of options
 
 Parsing XML with javascript remains one of the great difficulties of writing web applications.
 Most methods are limited by such things as poor browser support, poor or non-existent namespace support, poor attribute handling, difficult to use or bloated.
@@ -19,26 +17,15 @@ The most effective solutions usually involve converting the XML to JSON, and ind
 
 xmlToJSON may not solve all of your woes, but it solved mine :)
 
-Installation
-------------
-1. [Download sax.js](https://raw.github.com/isaacs/sax-js/master/lib/sax.js).
-2. [Download xmlToJSON.js](https://raw.github.com/metatribal/xmlToJSON/master/xmlToJSON.js).
-3. Include them both in your html.
- 
-```
-<script type="text/javascript" src="path/sax.js"></script>
-```
 ```
 <script type="text/javascript" src="path/xmlToJSON.js"></script>
  ```
 Usage
 -----
-To get started, Simply instantiate the parser and use.
+The functions are packaged as a simple module
  ```javascript
-  var parser = new xmlToJSON.Parser();         // instantiate the parser
-
-  testString = '<xml><a>It Works!</a></xml>';  // get some xml
-  result = parser.parseString(testString);     // parse!
+  testString = '<xml><a>It Works!</a></xml>';  	// get some xml
+  result = xmlToJSON.parseString(testString);	// parse
  ```
  The (prettified) result of the above code is
  ```javascript
@@ -46,7 +33,7 @@ To get started, Simply instantiate the parser and use.
     "xml": {
         "a": [
             {
-                "_t": "It Works!"
+                "text": "It Works!"
             }
         ]
     }
@@ -55,35 +42,34 @@ To get started, Simply instantiate the parser and use.
 
 Options
 -------
-There are only a few options available.  If no options are passed to the parse, defaults are used.
 ```javascript
-options = {
-	 parseCDATA : false,		// extract cdata blocks, results in an array of text and cdata blocks
-	 trim : false,			// trim leading and trailing whitespace in text nodes
-	 normalize: true,		// collapse multiple spaces to single space
-	 namespaceKey : 'ns',		// tag name for namespace objects, default = '_ns'
-	 attributeKey : 'at',		// tag name for the attributes list, default = '_at'
-	 textKey : 'text',		// tag name for text values, default = '_t'
-	 valueKey : 'value',		// tag name for attribute values, default = '_t'
-}	
+// there are the default options
+var options = {
+	parseCDATA: true,	// extract cdata and merge with text
+	grokAttr: true,		// convert truthy attributes to boolean, etc
+	grokText: true,		// convert truthy text to boolean, etc
+	normalize: true,	// collapse multiple spaces to single space
+	xmlns: false, 		// include namespaces as attribute in output
+	namespaceKey: 'ns', 	// tag name for namespace objects
+	textKey: 'text', 	// tag name for text values
+	valueKey: 'value', 	// tag name for attribute values
+	attrKey: 'attr', 	// tag for attr groups
+	attrsAsObject: true, 	// if false, key is used as prefix to name, set prefix to '' to merge children and attrs.
+	stripAttrPrefix: true, 	// remove namespace prefixes from nodes(el and attr) (set false if you have elements with the same name in different namespaces)
+	stripElemPrefix: true, 	// for elements of same name in diff prefixes, you can use the namespaceKey to determine which it is.
+	childrenAsArray: true 	// force children into arrays
+};	
 
-var parser = new xmlToJSON.Parser(options);
-result = parser.parseString(xmlString);
+// you can change the defaults by passing the parser an options object of your own
+var myOptions - {
+	parseCDATA: false,
+	xmlns: true
+}
+
+result = xmlToJSON.parseString(xmlString, myOptions);
 ```
 
-Notes on Notation
-------------------
-* The root node of the XML will be the root tag name
-* Child elements are represented as arrays (supports multiple children with the same name).  This requires the use of array index selectors, but it's easy!
-* Prefixes are thrown out - all tag names use the corresponding local name
-* The default namespace attribute will have the name 'xmlns'.  It's value will equal the namespaceKey value for the element (see example below).
-* Namespaces URIs are stored in the namespaceKey
-* Node text is stored in the textKey
-* Attributes are stored in the attributeKey.  Its not an array, so each member remains accessible by dot notation.
-* Attribute value are stored in the valuKey
-* CDATA is stored in the cdataKey
-
-A more complicated example (with namespaces, attributed, and cdata)
+A more complicated example (with xmlns: true)
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <xml xmlns="http://default.namespace.uri">
@@ -98,93 +84,41 @@ A more complicated example (with namespaces, attributed, and cdata)
 results in
 ```javascript
 {
-    "xml": {
-        "_ns": "http://default.namespace.uri", 
-        "_at": {
-            "xmlns": {
-                "_ns": "http://www.w3.org/2000/xmlns/", 
-                "_t": "http://default.namespace.uri"
-            }
-        }, 
-        "a": [
-            {
-                "_ns": "http://default.namespace.uri", 
-                "b": [
-                    {
-                        "_ns": "http://default.namespace.uri", 
-                        "_at": {
-                            "id": {
-                                "_t": "1"
-                            }
-                        }, 
-                        "_t": "one"
-                    }, 
-                    {
-                        "_ns": "http://default.namespace.uri", 
-                        "_at": {
-                            "id": {
-                                "_t": "2"
-                            }
-                        }, 
-                        "_c": "some <cdata>", 
-                        "_t": "two"
-                    }
-                ], 
-                "c": [
-                    {
-                        "_ns": "http://another.namespace", 
-                        "_at": {
-                            "id": {
-                                "_ns": "http://another.namespace", 
-                                "_t": "3"
-                            }, 
-                            "ns": {
-                                "_ns": "http://www.w3.org/2000/xmlns/", 
-                                "_t": "http://another.namespace"
-                            }
-                        }, 
-                        "_t": "three"
-                    }
-                ]
-            }
-        ]
-    }
+        "xml": [{
+                "attr": {
+                        "xmlns": {
+                                "value": "http://default.namespace.uri"
+                        }
+                },
+                "a": [{
+                        "b": [{
+                                "attr": {
+                                        "id": {
+                                                "value": 1
+                                        }
+                                },
+                                "text": "one"
+                        }, {
+                                "attr": {
+                                        "id": {
+                                                "value": 2
+                                        }
+                                },
+                                "text": "some <cdata>two"
+                        }],
+                        "c": [{
+                                "attr": {
+                                        "xmlns:ns": {
+                                                "value": "http://another.namespace"
+                                        },
+                                        "id": {
+                                                "value": 3
+                                        }
+                                },
+                                "text": "three"
+                        }]
+                }]
+        }]
 }
-
 ```
-
-Accessors
-----------
-Because the result is not a pure multidimensional array, filter() does not work.  However, the syntax for direct access and for retrieving arrays is very straightforward.
-I intend to write a filter method in the near future
-
-```javascript
-result.xml.a[0].b[1]._t;    //returns: "two"
-result.xml.a[0].c[0]._at.id._t; // returns: "3"
-result.xml.a[0].b;          // returns an array of all children of 'a' named 'b' (prettified below)
-
-[
-    {
-        "_ns": "http://default.namespace.uri", 
-        "_at": {
-            "id": {
-                "_t": "1"
-            }
-        }, 
-        "_t": "one"
-    }, 
-    {
-        "_ns": "http://default.namespace.uri", 
-        "_at": {
-            "id": {
-                "_t": "2"
-            }
-        }, 
-        "_c": "some <cdata>", 
-        "_t": "two"
-    }
-]
-
-```
-
  
