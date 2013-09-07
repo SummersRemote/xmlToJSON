@@ -56,7 +56,7 @@ var options = {
 	valueKey: 'value', 	// tag name for attribute values
 	attrKey: 'attr', 	// tag for attr groups
 	attrsAsObject: true, 	// if false, key is used as prefix to name, set prefix to '' to merge children and attrs.
-	stripAttrPrefix: true, 	// remove namespace prefixes from nodes(el and attr) (set false if you have elements with the same name in different namespaces)
+	stripAttrPrefix: true, 	// remove namespace prefixes from nodes(el and attr). Does nto strip 'xmlns:' (set false if you have elements with the same name in different namespaces)
 	stripElemPrefix: true, 	// for elements of same name in diff prefixes, you can use the namespaceKey to determine which it is.
 	childrenAsArray: true 	// force children into arrays
 };	
