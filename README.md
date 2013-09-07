@@ -6,9 +6,10 @@ A simple javascript utility for converting xml into json.
 Features
 * no external dependencies
 * small (~3kb minified)
-* simple parsing.  pass a string, get back a javascipt object ( use JSON.stringify(obj) to get the string representation )
-* supports atrributes, text, cdata, namespaces, default namespaces, attributes with namespaces, you get the idea
-* plenty of options
+* simple parsing.  pass either a string or xml node and get back a javascipt object ( use JSON.stringify(obj) to get the string representation )
+* supports atrributes, text, cdata, namespaces, default namespaces, attributes with namespaces... you get the idea
+* lots of rendering of options
+* browser support - it works on IE 7+, and nearly every version of Chrome, Safari, and Firefox
 
 Parsing XML with javascript remains one of the great difficulties of writing web applications.
 Most methods are limited by such things as poor browser support, poor or non-existent namespace support, poor attribute handling, difficult to use or bloated.
@@ -25,7 +26,7 @@ Include the src
  ```
 and enjoy!  xmlToJSON is packaged as a simple module, so use it like this
  ```javascript
-  testString = '<xml><a>It Works!</a></xml>';  	// get some xml
+  testString = '<xml><a>It Works!</a></xml>';  	// get some xml (string or document/node)
   result = xmlToJSON.parseString(testString);	// parse
  ```
  The (prettified) result of the above code is
