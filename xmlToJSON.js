@@ -34,7 +34,6 @@ var xmlToJSON = (function () {
                 stripAttrPrefix: true, 	// remove namespace prefixes from nodes(el and attr) (set false if you have elements with the same name in different namespaces)
                 stripElemPrefix: true, 	// for elements of same name in diff prefixes, you can use the namespaceKey to determine which it is.
                 childrenAsArray: true 	// force children into arrays
-
         };
 
         var prefixMatch = new RegExp(/(?!xmlns)^.*:/);
@@ -160,7 +159,10 @@ var xmlToJSON = (function () {
 
                 if (sCollectedTxt) {
                         if (options.grokText) {
-                                vResult[options.textKey] = grokType(sCollectedTxt.replace(trimMatch, ''));
+                                value = grokType(sCollectedTxt.replace(trimMatch, ''));
+                                if (value) {
+									vResult[options.textKey] = value;
+								}
                         } else if (options.normalize) {
                                 vResult[options.textKey] = sCollectedTxt.replace(trimMatch, '').replace(/\s+/g, " ");
                         } else {
