@@ -211,6 +211,8 @@ var xmlToJSON = (function () {
         return {
                 parseXML: parseXML,
                 parseString: parseString,
+                xmlToString: xmlToString,
+                stringToXML: stringToXML
         };
 
 }());
