@@ -44,7 +44,7 @@ and enjoy!  xmlToJSON is packaged as a simple module, so use it like this
 Options
 -------
 ```javascript
-// there are the default options
+// these are the default options
 var options = {
 	parseCDATA: true,	// extract cdata and merge with text
 	grokAttr: true,		// convert truthy attributes to boolean, etc
