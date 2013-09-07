@@ -17,12 +17,13 @@ The most effective solutions usually involve converting the XML to JSON, and ind
 
 xmlToJSON may not solve all of your woes, but it solved mine :)
 
+Usage
+-----
+Include the src
 ```
 <script type="text/javascript" src="path/xmlToJSON.js"></script>
  ```
-Usage
------
-The functions are packaged as a simple module
+and enjoy!  xmlToJSON is packaged as a simple module, so use it like this
  ```javascript
   testString = '<xml><a>It Works!</a></xml>';  	// get some xml
   result = xmlToJSON.parseString(testString);	// parse
