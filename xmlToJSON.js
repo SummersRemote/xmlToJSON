@@ -1,165 +1,216 @@
-var xmlToJSON = {};									// create a namespace
+/* Copyright 2013 William Summers, Metatribal Research
+ * adapted from https://developer.mozilla.org/en-US/docs/JXON
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-xmlToJSON.Parser = (function() {							// declare the object, Parser
+/**
+ * @author William Summers
+ *
+ */
+var xmlToJSON = (function () {
 
+        var options = { // set up the default options
+                parseCDATA: true,	// extract cdata and merge with text
+                grokAttr: true,		// convert truthy attributes to boolean, etc
+                grokText: true,		// convert truthy text to boolean, etc
+                normalize: true,	// collapse multiple spaces to single space
+                xmlns: false, 		// include namespaces as attribute in output
+                namespaceKey: 'ns', 	// tag name for namespace objects
+                textKey: 'text', 	// tag name for text values
+                valueKey: 'value', 	// tag name for attribute values
+                attrKey: 'attr', 	// tag for attr groups
+                attrsAsObject: true, 	// if false, key is used as prefix to name, set prefix to '' to merge children and attrs.
+                stripAttrPrefix: true, 	// remove namespace prefixes from nodes(el and attr) (set false if you have elements with the same name in different namespaces)
+                stripElemPrefix: true, 	// for elements of same name in diff prefixes, you can use the namespaceKey to determine which it is.
+                childrenAsArray: true 	// force children into arrays
 
-	options = {				// set up the default options
-		 parseCDATA : false,		//   extract cdata blocks, results in an array of text and cdata blocks
-		 trim : false,			//   trim leading and trailing whitespace in text nodes
-		 normalize: true,		//   collapse multiple spaces to single space
-		 namespaceKey : 'ns',		//   tag name for namespace objects, default = '_ns'
-		 attributeKey : 'at',		//   tag name for the attributes list, default = '_at'
-		 textKey : 'text',		//   tag name for text values, default = '_t'
-		 valueKey : 'value',		//   tag name for attribute values, default = '_t'
-	}
+        };
 
-    var parserConstructor = function Parser(opt) {				// with a constructor to return (see end of function)
-        if(false === (this instanceof Parser)) {
-            return new Parser();						// it doesn't do anything, but gives an object to provide method upon
+        var prefixMatch = new RegExp(/(?!xmlns)^.*:/);
+        var trimMatch = new RegExp(/^\s+|\s+$/g);
+
+        var grokType = function (sValue) {
+                if (/^\s*$/.test(sValue)) {
+                        return null;
+                }
+                if (/^(?:true|false)$/i.test(sValue)) {
+                        return sValue.toLowerCase() === "true";
+                }
+                if (isFinite(sValue)) {
+                        return parseFloat(sValue);
+                }
+                //if (isFinite(Date.parse(sValue))) {
+                //		return new Date(sValue);
+                //}
+                return sValue;
+        };
+
+        var parseString = function (xmlString, opt) {
+                return this.parseXML(stringToXML(xmlString), opt);
         }
 
-		//initialize options
-		for (key in opt) {
-			options[key] = opt[key];
-		}
-    }
+        var parseXML = function (oXMLParent, opt) {
 
-    parserConstructor.prototype.parseString = function (xmlString) {			// such as this one!  add parseString method to the Parser object
+                // initialize options
+                for (key in opt) {
+                        options[key] = opt[key];
+                }
 
-			parser = sax.parser(true, {xmlns: true, trim: options.trim, normalize : options.normalize});		// get an instance of the sax.js parser
-			stack = [];							// create an empty array to hold and collapse objects
+                var vResult = {}, nLength = 0, sCollectedTxt = "";
 
-			// sax.js functions begin here
-			parser.onopentag = function (node) {
-		  		nodeTmp = {};						// node object
-		  		data = {}						// node data
-		  		name = node.name;					// tag name to use for this node (default)
-		  		if (node.uri) {						// test for namespaces
-		  			name = node.local;				// switch tag name to local part (no prefixes in tags)
-					data[options.namespaceKey] = node.uri;		// set the namespace as well
-				}
+                // parse namespace information
+                if (options.xmlns && oXMLParent.namespaceURI) {
+                        vResult[options.namespaceKey] = oXMLParent.namespaceURI;
+                }
 
-				if (!isEmpty(node.attributes) ) {			// do we have an attributes?
-					data[options.attributeKey] = {};		// create an empty data object for them
-					for (attr in node.attributes) {			// iterate over the attribute names
-						attrTmp = stack.pop();			// pop the attribute object from the stack
-											//	sax.js encounters attributes ahead of open tags
-											//	so, we created them in the "onattribute" method
-						for(var key in attrTmp) break;		// neat trick to fetch the first tag name
-						data[options.attributeKey][key] = attrTmp[key];	// set the attribute
-					}
-				}
-				nodeTmp[name] = data;					// copy the data into the node object
-				stack.push(nodeTmp);					// and push it the stack (happens for every element)
-			};
+                // parse attributes
+                // using attributes property instead of hasAttributes method to support older browsers
+                if (oXMLParent.attributes) {
+                        var vAttribs = {};
 
-			parser.onclosetag = function (name) {
-				if (stack.length < 2) {					// make sure there are at least two things on the stack
-					return;						// if not, bail
-				} else {
-					child = stack.pop();				// the most recent item on the stack is a child not
-					for(var ckey in child) break;			// get it's tag name
+                        for (nLength; nLength < oXMLParent.attributes.length; nLength++) {
+                                oAttrib = oXMLParent.attributes.item(nLength);
+                                vContent = {};
+                                attribName = '';
 
-					parent = stack.pop();				// the second item will be it's parent (since we're processing on closetags)
-					for(var pkey in parent) break;			// get it's tag name as well
+                                if (options.stripAttrPrefix) {
+                                        attribName = oAttrib.name.replace(prefixMatch, '');
 
-					if ( !(parent[pkey][ckey]) ) {			// if the parent does not contain an item under the child's tag name
-						parent[pkey][ckey] = [child[ckey]];	// add it (in an array to support multiple xml elements of the same name)
-					} else {					// otherwise
-						parent[pkey][ckey].push(child[ckey]);	// push the child object to the existing array of similiarly named children
-					}
+                                } else {
+                                        attribName = oAttrib.name;
+                                }
 
-					stack.push(parent);				// push the updated parent back to the stack
-				}
-			};
+                                if (options.grokAttr) {
+                                        vContent[options.valueKey] = grokType(oAttrib.value.replace(trimMatch, ''));
+                                } else {
+                                        vContent[options.valueKey] = oAttrib.value.replace(trimMatch, '');
+                                }
 
-			parser.onattribute = function (attr) {
-		  	  		attrTmp = {};					// attribute object
-		 			data = {};					// attribute data
-		 			name = attr.name;				// tag name to use for this attribute (default)
+                                if (options.xmlns && oAttrib.namespaceURI) {
+                                        vContent[options.namespaceKey] = oAttrib.namespaceURI;
+                                }
 
-		 			if (attr.uri) {					// test for namespaces
-		 				if (name != 'xmlns') {			// if the attribute is not the default namespace
-		 					name = attr.local;		// switch tag name to local part (no prefixes in tags)
-						}
-						data[options.namespaceKey] = attr.uri;  // set the namespace as well
-					}
-					data[options.valueKey] = attr.value;		// set the value of the attribute
+                                if (options.attrsAsObject) { // attributes with same local name must enable prefixes
+                                        vAttribs[attribName] = vContent;
+                                } else {
+                                        vResult[options.attrKey + attribName] = vContent;
+                                }
+                        }
+
+                        if (options.attrsAsObject) {
+                                vResult[options.attrKey] = vAttribs;
+                        } else {}
+                }
+
+                // iterate over the children
+                if (oXMLParent.hasChildNodes()) {
+                        for (var oNode, sProp, vContent, nItem = 0; nItem < oXMLParent.childNodes.length; nItem++) {
+                                oNode = oXMLParent.childNodes.item(nItem);
+
+                                if (oNode.nodeType === 4 && options.parseCDATA) {
+                                        sCollectedTxt += oNode.nodeValue;
+                                } /* nodeType is "CDATASection" (4) */
+                                else if (oNode.nodeType === 3) {
+                                        sCollectedTxt += oNode.nodeValue;
+                                } /* nodeType is "Text" (3) */
+                                else if (oNode.nodeType === 1) { /* nodeType is "Element" (1) */
+
+                                        if (nLength === 0) {
+                                                vResult = {};
+                                        }
+
+                                        // using nodeName to support browser (IE) implementation with no 'localName' property
+                                        if (options.stripElemPrefix) {
+                                                sProp = oNode.nodeName.replace(prefixMatch, '');
+                                        } else {
+                                                sProp = oNode.nodeName;
+                                        }
+
+                                        vContent = parseXML(oNode);
+
+                                        if (vResult.hasOwnProperty(sProp)) {
+                                                if (vResult[sProp].constructor !== Array) {
+                                                        vResult[sProp] = [vResult[sProp]];
+                                                }
+                                                vResult[sProp].push(vContent);
+
+                                        } else {
+                                                if (options.childrenAsArray) {
+                                                        vResult[sProp] = [];
+                                                        vResult[sProp].push(vContent);
+                                                } else {
+                                                        vResult[sProp] = vContent;
+                                                }
+                                                nLength++;
+                                        }
+                                }
+                        }
+                }
+
+                if (sCollectedTxt) {
+                        if (options.grokText) {
+                                vResult[options.textKey] = grokType(sCollectedTxt.replace(trimMatch, ''));
+                        } else if (options.normalize) {
+                                vResult[options.textKey] = sCollectedTxt.replace(trimMatch, '').replace(/\s+/g, " ");
+                        } else {
+                                vResult[options.textKey] = sCollectedTxt.replace(trimMatch, '');
+                        }
+                }
+
+                return vResult;
+        }
 
 
-					attrTmp[name] = data;				// copy the data into the attribute object
-					stack.push(attrTmp);				// and push it to the stack
-			};
+        // Convert xmlDocument to a string
+        // Returns null on failure
+        var xmlToString = function (xmlDoc) {
+                try {
+                        var xmlString = xmlDoc.xml ? xmlDoc.xml : (new XMLSerializer()).serializeToString(xmlDoc);
+                        return xmlString;
+                } catch (err) {
+                        return null;
+                }
+        }
 
-			parser.ontext = function (text) {
-				if (stack.length > 0) {					// make sure there is at least one object on the stack
-					nodeTmp = stack.pop();				// get the object
-					for(var key in nodeTmp) break;			// get it's tag name
+        // Convert a string to XML Node Structure
+        // Returns null on failure
+        var stringToXML = function (xmlString) {
+                try {
+                        var xmlDoc = null;
 
-					if (options.parseCDATA) {					// if we are parsing cdata blocks
-						if (nodeTmp[key][options.textKey]) 	{	 	// and data exists
-							nodeTmp[key][options.textKey].push(text);	// append the new data
-						} else {
-							nodeTmp[key][options.textKey] =
-								nodeTmp[key][options.textKey] = [text];	// otherwise, add it
-						}
-					} else {
-						if (nodeTmp[key][options.textKey]) 	{		// if there is already some text (skipping cdata)
-							nodeTmp[key][options.textKey] =
-								nodeTmp[key][options.textKey]+ text;	// append the new text value
-						} else {
-							nodeTmp[key][options.textKey] = text;		// otherwise, just add it.
-						}
-					}
-					stack.push(nodeTmp);				// push the updated object back to the stack
-				}
-			};
+                        if (window.DOMParser) {
 
+                                var parser = new DOMParser();
+                                xmlDoc = parser.parseFromString(xmlString, "text/xml");
 
-			parser.oncdata = function (cdata) {
-				if (options.parseCDATA) {
-					if (stack.length > 0) {					// make sure there is at least one object on the stack
-						nodeTmp = stack.pop();				// get the object
-						for(var key in nodeTmp) break;			// get it's tag name
-						nodeTmp[key][options.textKey].push(cdata);	// push the cdata value to the text array
-						stack.push(nodeTmp);				// push the updated object back to the stack
-					}
-				}
-			};
+                                return xmlDoc;
+                        } else {
+                                xmlDoc = new ActiveXObject("Microsoft.XMLDOM");
+                                xmlDoc.async = false;
+                                xmlDoc.loadXML(xmlString);
 
+                                return xmlDoc;
+                        }
+                } catch (e) {
+                        return null;
+                }
+        }
 
-			parser.onerror = function (error) {
-			  console.debug('error ' + error);				// print errors as they occur
-			};
-			// end of sax.js methods 					// several nodes were not implemented, such as
-											//   processing isntructions, cdata, comments, etc...
+        // this is the "revealed"/public part of the module
+        return {
+                parseXML: parseXML,
+                parseString: parseString,
+        };
 
-			function isEmpty(obj) {						// utility method to test for empty objects, e.g.
-				for(var prop in obj) {					//   var mtObj = {}
-					if(obj.hasOwnProperty(prop))
-						return false;
-				}
-				return true;
-			}
-
-			parser.write(xmlString).close();				// launches the sax parser
-			return stack[0];						// leaving the result as the only object on the stack
-    }
-
-    return parserConstructor;								// returns the Parser object mentioned earlier
 }());
-
-// avail - "use or take advantage of (an opportunity or available resource)."
-// takes an expression as a string and tests it inside of a try-catch block.
-// if the expression succeeds, the expression is evaluated in the current scope and the value returned
-// if the expression fails (and throws an error), null will be returned
-// this allows compact syntax for nested accessors without a-priori knowledge of the structure
-// e.g.
-//	  val = avail('xml.a[0].b[0].text') || 'no value found';
-function avail(objString) {
-	try {
-		return eval(objString);
-	} catch (err) {
-		return null;
-	}
-};
