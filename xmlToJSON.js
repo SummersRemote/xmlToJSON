@@ -76,7 +76,7 @@ var xmlToJSON = (function () {
 
                 // parse attributes
                 // using attributes property instead of hasAttributes method to support older browsers
-                if (oXMLParent.attributes) {
+                if (oXMLParent.attributes && oXMLParent.attributes.length > 0) {
                         var vAttribs = {};
 
                         for (nLength; nLength < oXMLParent.attributes.length; nLength++) {
