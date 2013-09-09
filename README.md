@@ -1,7 +1,7 @@
-xmlToJSON (updated Sept 6, 2013)
+xmlToJSON
 =========
 
-A simple javascript utility for converting xml into json.
+A simple javascript utility for converting XML into JSON.
 
 Features
 * no external dependencies
