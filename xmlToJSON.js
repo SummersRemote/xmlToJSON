@@ -21,18 +21,19 @@
 var xmlToJSON = (function () {
 
         var options = { // set up the default options
-                parseCDATA: true,	// extract cdata and merge with text
+                mergeCDATA: true,	// extract cdata and merge with text
                 grokAttr: true,		// convert truthy attributes to boolean, etc
-                grokText: true,		// convert truthy text to boolean, etc
+                grokText: true,		// convert truthy text/attr to boolean, etc
                 normalize: true,	// collapse multiple spaces to single space
-                xmlns: false, 		// include namespaces as attribute in output
-                namespaceKey: 'ns', 	// tag name for namespace objects
-                textKey: 'text', 	// tag name for text values
-                valueKey: 'value', 	// tag name for attribute values
-                attrKey: 'attr', 	// tag for attr groups
+                xmlns: true, 		// include namespaces as attribute in output
+                namespaceKey: '_ns', 	// tag name for namespace objects
+                textKey: '_text', 	// tag name for text nodes
+                valueKey: '_value', 	// tag name for attribute values
+                attrKey: '_attr', 	// tag for attr groups
+                cdataKey: '_cdata'	// tag for cdata nodes (ignored if mergeCDATA is true)
                 attrsAsObject: true, 	// if false, key is used as prefix to name, set prefix to '' to merge children and attrs.
-                stripAttrPrefix: true, 	// remove namespace prefixes from nodes(el and attr) (set false if you have elements with the same name in different namespaces)
-                stripElemPrefix: true, 	// for elements of same name in diff prefixes, you can use the namespaceKey to determine which it is.
+                stripAttrPrefix: true, 	// remove namespace prefixes from attributes
+                stripElemPrefix: true, 	// for elements of same name in diff namespaces, you can enable namespaces and access the nskey property
                 childrenAsArray: true 	// force children into arrays
         };
 
@@ -117,8 +118,25 @@ var xmlToJSON = (function () {
                         for (var oNode, sProp, vContent, nItem = 0; nItem < oXMLParent.childNodes.length; nItem++) {
                                 oNode = oXMLParent.childNodes.item(nItem);
 
-                                if (oNode.nodeType === 4 && options.parseCDATA) {
+                                if (oNode.nodeType === 4) {
+									if (options.mergeCDATA) {
                                         sCollectedTxt += oNode.nodeValue;
+									} else {
+										if (vResult.hasOwnProperty(options.cdataKey)) {
+												if (vResult[options.cdataKey].constructor !== Array) {
+														vResult[options.cdataKey] = [vResult[options.cdataKey]];
+												}
+												vResult[options.cdataKey].push(oNode.nodeValue);
+
+										} else {
+												if (options.childrenAsArray) {
+														vResult[options.cdataKey] = [];
+														vResult[options.cdataKey].push(oNode.nodeValue);
+												} else {
+														vResult[options.cdataKey] = oNode.nodeValue;
+												}
+                                        }
+									}
                                 } /* nodeType is "CDATASection" (4) */
                                 else if (oNode.nodeType === 3) {
                                         sCollectedTxt += oNode.nodeValue;
@@ -155,7 +173,14 @@ var xmlToJSON = (function () {
                                         }
                                 }
                         }
-                }
+                } else if (!sCollectedTxt){ // no children and no text, return null
+					if (options.childrenAsArray) {
+							vResult[options.textKey] = [];
+							vResult[options.textKey].push(null);
+					} else {
+							vResult[options.textKey] = null;
+					}
+				}
 
                 if (sCollectedTxt) {
                         if (options.grokText) {
