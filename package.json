@@ -3,6 +3,7 @@
   "version": "1.0.1",
   "author": "William Summers <william.summers@metatribal.com>",
   "description": "configurable, lightweight xml to json transform",
+  "license: "Apache",
   "contributors": [ 
     {
       "name": "William Summers",
@@ -19,5 +20,10 @@
     "convert"
   ],
   "dependencies" : {},
-  "license": "Apache"
+  "dependencies": {},
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
 }
