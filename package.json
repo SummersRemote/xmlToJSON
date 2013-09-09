@@ -19,6 +19,10 @@
     "json",
     "convert"
   ],
+  "main" : "./lib/xmlToJSON",
+  "directories" : {
+    "lib": "./lib"
+  },
   "dependencies" : {},
   "dependencies": {},
   "devDependencies": {},
