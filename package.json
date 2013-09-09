@@ -2,31 +2,23 @@
   "name": "xmlToJSON",
   "version": "1.0.1",
   "author": "William Summers <william.summers@metatribal.com>",
-  "description": "configurable, lightweight xml to json transform",
-  "license": "Apache",
+  "description": "Configurable, lightweight XML to JSON converter.",
+  "license":     {
+      "type": "Apache", "url": "https://github.com/metatribal/xmlToJSON/blob/master/LICENSE"
+    },
   "contributors": [ 
     {
-      "name": "William Summers",
-      "email": "william.summers@metatribal.com"
+      "name": "William Summers", "email": "william.summers@metatribal.com"
     } 
   ],
   "repository": {
-    "type": "git",
-    "url": "https://github.com/metatribal/xmlToJSON.git"
+    "type": "git", "url": "https://github.com/metatribal/xmlToJSON.git"
   },
-  "keywords": [
-    "xml",
-    "json",
-    "convert"
-  ],
+  "keywords": ["xml", "json", "convert"  ],
   "main" : "./lib/xmlToJSON",
   "directories" : {
     "lib": "./lib"
   },
-  "dependencies" : {},
-  "dependencies": {},
-  "devDependencies": {},
-  "optionalDependencies": {},
   "engines": {
     "node": "*"
   }
