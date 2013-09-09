@@ -1,0 +1,23 @@
+{
+  "name": "xmlToJSON",
+  "version": "1.0.1",
+  "author": "William Summers <william.summers@metatribal.com>",
+  "description": "configurable, lightweight xml to json transform",
+  "contributors": [ 
+    {
+      "name": "William Summers",
+      "email": "william.summers@metatribal.com"
+    } 
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/metatribal/xmlToJSON.git"
+  },
+  "keywords": [
+    "xml",
+    "json",
+    "convert"
+  ],
+  "dependencies" : {},
+  "license": "Apache"
+}
