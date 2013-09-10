@@ -43,6 +43,7 @@ and enjoy!  xmlToJSON is packaged as a simple module, so use it like this
 Options
 -------
 ```javascript
+// These are the option defaults
 var options = { 
 	mergeCDATA: true,	// extract cdata and merge with text nodes
 	grokAttr: true,		// convert truthy attributes to boolean, etc
