@@ -1,5 +1,5 @@
 {
-  "name": "xmlToJSON",
+  "name": "xmltojson",
   "version": "1.0.1",
   "author": "William Summers <william.summers@metatribal.com>",
   "description": "Configurable, lightweight XML to JSON converter.",
@@ -15,7 +15,7 @@
     "type": "git", "url": "https://github.com/metatribal/xmlToJSON.git"
   },
   "keywords": ["xml", "json", "convert"  ],
-  "main" : "./lib/xmltojson",
+  "main" : "./lib/xmlToJson",
   "directories" : {
     "lib": "./lib"
   },
