@@ -15,7 +15,7 @@
     "type": "git", "url": "https://github.com/metatribal/xmlToJSON.git"
   },
   "keywords": ["xml", "json", "convert"  ],
-  "main" : "./lib/xmlToJSON",
+  "main" : "./lib/xmltojson",
   "directories" : {
     "lib": "./lib"
   },
