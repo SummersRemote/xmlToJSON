@@ -1,6 +1,6 @@
 {
   "name": "xmltojson",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "author": "William Summers <william.summers@metatribal.com>",
   "description": "Configurable, lightweight XML to JSON converter.",
   "license":     {
