@@ -1,6 +1,6 @@
 {
   "name": "xmltojson",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "author": "William Summers <william.summers@metatribal.com>",
   "description": "Configurable, lightweight XML to JSON converter.",
   "license":     {
@@ -14,7 +14,7 @@
   "repository": {
     "type": "git", "url": "https://github.com/metatribal/xmlToJSON.git"
   },
-  "keywords": ["xml", "json", "convert"  ],
+  "keywords": ["xml", "json", "convert", "transform"  ],
   "main" : "./lib/xmlToJson",
   "directories" : {
     "lib": "./lib"
