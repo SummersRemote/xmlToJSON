@@ -9,6 +9,7 @@ Features
 * simple parsing.  pass either a string or xml node and get back a javascipt object ( use JSON.stringify(obj) to get the string representation )
 * supports atrributes, text, cdata, namespaces, default namespaces, attributes with namespaces... you get the idea
 * lots of rendering of options
+* consistent, predicatble output
 * browser support - it works on IE 9+, and nearly every version of Chrome, Safari, and Firefox as well as iOS, Android, and Blackberry.  (xmlToJSON will work for IE 7/8 as well if you set the xmlns option to false)
 
 Parsing XML (esp. with namespaces) with javascript remains one of the great frustrations of writing web applications.
