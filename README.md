@@ -63,7 +63,7 @@ var options = {
 };	
 
 // you can change the defaults by passing the parser an options object of your own
-var myOptions - {
+var myOptions = {
 	mergeCDATA: false,
 	xmlns: false,
 	attrsAsObject: false
