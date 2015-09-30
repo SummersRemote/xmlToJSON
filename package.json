@@ -1,6 +1,6 @@
 {
   "name": "xmlToJSON",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Configurable, lightweight XML to JSON converter.",
   "main": "./lib/xmlToJSON.js",
   "directories": {
@@ -20,7 +20,7 @@
     "json"
   ],
   "author": "metatribal",
-  "license": "Apache",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/metatribal/xmlToJSON/issues"
   },
