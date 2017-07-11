@@ -129,7 +129,7 @@ Node Usage
 ----------
 While this library does not officialy support use in the NodeJS environment; several users have reported good results by requiring the xmldom pacakge.
 
-User @sethb0 has suggested the following workaround example.
+User [sethb0](https://github.com/sethb0) has suggested the following workaround example.
 
 ```
 const { DOMParser } = require('xmldom');
