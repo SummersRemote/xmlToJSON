@@ -41,6 +41,19 @@ and enjoy!  xmlToJSON is packaged as a simple module, so use it like this
 }
 ```
 
+Node Usage
+----------
+While this library does not officialy support use in the NodeJS environment; several users have reported good results by requiring the xmldom package.
+
+User [sethb0](https://github.com/sethb0) has suggested the following workaround example.
+
+```
+const { DOMParser } = require('xmldom');
+const xmlToJSON = require('xmlToJSON');
+xmlToJSON.stringToXML = (string) => new DOMParser().parseFromString(string, 'text/xml');
+```
+ 
+
 Options
 -------
 ```javascript
@@ -125,15 +138,3 @@ results in
 }
 ```
 
-Node Usage
-----------
-While this library does not officialy support use in the NodeJS environment; several users have reported good results by requiring the xmldom package.
-
-User [sethb0](https://github.com/sethb0) has suggested the following workaround example.
-
-```
-const { DOMParser } = require('xmldom');
-const xmlToJSON = require('xmlToJSON');
-xmlToJSON.stringToXML = (string) => new DOMParser().parseFromString(string, 'text/xml');
-```
- 
