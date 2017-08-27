@@ -1,6 +1,6 @@
 {
   "name": "xmlToJSON.js",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "main": "./lib/xmlToJSON.js",
   "dependencies": {},
   "ignore": [
