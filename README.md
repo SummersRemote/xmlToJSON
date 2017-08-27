@@ -3,6 +3,9 @@ xmlToJSON
 
 A simple javascript module for converting XML into JSON within the browser.
 
+Parsing XML (esp. with namespaces) with javascript remains one of the great frustrations of writing web applications.
+Most methods are limited by such things as poor browser support, poor or non-existent namespace support, poor attribute handling, incomplete representation, inconsistent output, and bloated dependencies.
+
 Features
 * no external dependencies
 * small (~3kb minified)
@@ -11,9 +14,6 @@ Features
 * lots of rendering of options
 * consistent, predictable output
 * browser support - it works on IE 9+, and nearly every version of Chrome, Safari, and Firefox as well as iOS, Android, and Blackberry.  (xmlToJSON will work for IE 7/8 as well if you set the xmlns option to false)
-
-Parsing XML (esp. with namespaces) with javascript remains one of the great frustrations of writing web applications.
-Most methods are limited by such things as poor browser support, poor or non-existent namespace support, poor attribute handling, incomplete representation, and bloated dependencies.
 
 xmlToJSON may not solve all of your woes, but it solved some of mine :)
 
