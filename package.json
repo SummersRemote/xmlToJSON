@@ -1,6 +1,6 @@
 {
-  "name": "xmlToJSON",
-  "version": "1.3.3",
+  "name": "xmltojson",
+  "version": "1.3.4",
   "description": "Configurable, lightweight XML to JSON converter.",
   "main": "./lib/xmlToJSON.js",
   "directories": {
