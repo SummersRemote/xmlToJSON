@@ -1,7 +1,7 @@
 xmlToJSON
 =========
 
-A simple javascript module for converting XML into JSON within the browser.
+A simple JavaScript module for converting XML into JSON *within the browser*.
 
 Parsing XML (esp. with namespaces) with javascript remains one of the great frustrations of writing web applications.
 Most methods are limited by such things as poor browser support, poor or non-existent namespace support, poor attribute handling, incomplete representation, inconsistent output, and bloated dependencies.
@@ -43,7 +43,7 @@ and enjoy!  xmlToJSON is packaged as a simple module, so use it like this
 
 Node Usage
 ----------
-While this library does not officialy support use in the NodeJS environment; several users have reported good results by requiring the xmldom package.
+While this library does not officialy support use in the NodeJS environment; several users have reported good results by including the xmldom package.
 
 User [sethb0](https://github.com/sethb0) has suggested the following workaround example.
 
