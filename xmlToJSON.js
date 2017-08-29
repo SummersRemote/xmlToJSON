@@ -22,7 +22,7 @@ var xmlToJSON = (function () {
 
     var version = "2.0.0-dev";
 
-    var options = { // set up the default options
+    var globalOptions = { // set up the default options
         mergeCDATA: true, // extract cdata and merge with text
         grokAttr: true, // convert truthy attributes to boolean, etc
         grokText: true, // convert truthy text/attr to boolean, etc
@@ -55,16 +55,18 @@ var xmlToJSON = (function () {
         return sValue;
     };
 
+    // TODO: Clean up options processing
     var parseString = function (xmlString, opt) {
-        return parseXML(stringToXML(xmlString), opt);
+        var localoptions = {}
+        opt = opt || {}
+        // initialize options
+        for (var key in globalOptions) {
+            localoptions[key] = (opt[key] === undefined) ? globalOptions[key] : opt[key];
+        }
+        return this.parseXML(this.stringToXML(xmlString), localoptions);
     }
 
-    var parseXML = function (oXMLParent, opt) {
-
-        // initialize options
-        for (var key in opt) {
-            options[key] = opt[key];
-        }
+    var parseXML = function (oXMLParent, options) {
 
         var vResult = {},
             nLength = 0,
@@ -155,7 +157,7 @@ var xmlToJSON = (function () {
                         sProp = oNode.nodeName;
                     }
 
-                    vContent = xmlToJSON.parseXML(oNode);
+                    vContent = xmlToJSON.parseXML(oNode, options);
 
                     if (vResult.hasOwnProperty(sProp)) {
                         if (vResult[sProp].constructor !== Array) {
