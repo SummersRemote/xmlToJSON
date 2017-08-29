@@ -2,7 +2,7 @@
 describe("Version", function () {
 
 	it("print version", function () {
-		expect(xmlToJSON.version).toEqual("1.3.5");
+		expect(xmlToJSON.version).toEqual("2.0.0-dev");
 	});
 
 });

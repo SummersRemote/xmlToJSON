@@ -20,14 +20,14 @@
 
 var xmlToJSON = (function () {
 
-    this.version = "1.3.5";
+    var version = "2.0.0-dev";
 
     var options = { // set up the default options
         mergeCDATA: true, // extract cdata and merge with text
         grokAttr: true, // convert truthy attributes to boolean, etc
         grokText: true, // convert truthy text/attr to boolean, etc
         normalize: true, // collapse multiple spaces to single space
-        xmlns: true, // include namespaces as attribute in output
+        xmlns: true, // include namespaces as attributes in output
         namespaceKey: '_ns', // tag name for namespace objects
         textKey: '_text', // tag name for text nodes
         valueKey: '_value', // tag name for attribute values
@@ -42,7 +42,7 @@ var xmlToJSON = (function () {
     var prefixMatch = new RegExp(/(?!xmlns)^.*:/);
     var trimMatch = new RegExp(/^\s+|\s+$/g);
 
-    this.grokType = function (sValue) {
+    var grokType = function (sValue) {
         if (/^\s*$/.test(sValue)) {
             return null;
         }
@@ -55,11 +55,11 @@ var xmlToJSON = (function () {
         return sValue;
     };
 
-    this.parseString = function (xmlString, opt) {
-        return this.parseXML(this.stringToXML(xmlString), opt);
+    var parseString = function (xmlString, opt) {
+        return parseXML(stringToXML(xmlString), opt);
     }
 
-    this.parseXML = function (oXMLParent, opt) {
+    var parseXML = function (oXMLParent, opt) {
 
         // initialize options
         for (var key in opt) {
@@ -93,7 +93,7 @@ var xmlToJSON = (function () {
                 }
 
                 if (options.grokAttr) {
-                    vContent[options.valueKey] = this.grokType(oAttrib.value.replace(trimMatch, ''));
+                    vContent[options.valueKey] = grokType(oAttrib.value.replace(trimMatch, ''));
                 } else {
                     vContent[options.valueKey] = oAttrib.value.replace(trimMatch, '');
                 }
@@ -185,7 +185,7 @@ var xmlToJSON = (function () {
 
         if (sCollectedTxt) {
             if (options.grokText) {
-                var value = this.grokType(sCollectedTxt.replace(trimMatch, ''));
+                var value = grokType(sCollectedTxt.replace(trimMatch, ''));
                 if (value !== null && value !== undefined) {
                     vResult[options.textKey] = value;
                 }
@@ -202,7 +202,7 @@ var xmlToJSON = (function () {
 
     // Convert xmlDocument to a string
     // Returns null on failure
-    this.xmlToString = function (xmlDoc) {
+    var xmlToString = function (xmlDoc) {
         try {
             var xmlString = xmlDoc.xml ? xmlDoc.xml : (new XMLSerializer()).serializeToString(xmlDoc);
             return xmlString;
@@ -213,7 +213,7 @@ var xmlToJSON = (function () {
 
     // Convert a string to XML Node Structure
     // Returns null on failure
-    this.stringToXML = function (xmlString) {
+    var stringToXML = function (xmlString) {
         try {
             var xmlDoc = null;
 
@@ -235,8 +235,21 @@ var xmlToJSON = (function () {
         }
     }
 
-    return this;
+    return {
+        version: version,
+        xmlToString: xmlToString,
+        stringToXML: stringToXML,
+        parseString: parseString,
+        parseXML: parseXML
+    }
 }).call({});
 
-if (typeof module != "undefined" && module !== null && module.exports) module.exports = xmlToJSON;
-else if (typeof define === "function" && define.amd) define(function () { return xmlToJSON });
+
+// set up Node.js exports or AMD style defines if available
+if (typeof module === "object" && typeof module.exports === "object") {
+    module.exports = xmlToJSON;
+}
+else if (typeof define === "function" && define.amd) define(function () {
+    return xmlToJSON
+});
+
