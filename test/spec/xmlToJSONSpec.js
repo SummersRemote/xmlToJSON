@@ -2,7 +2,7 @@
 describe("Version", function() {
 
     it("print version", function() {
-		expect(xmlToJSON.version).toMatch(/1\.3/);
+		expect(xmlToJSON.version).toMatch(/^1\.3/);
     });
 
 });
