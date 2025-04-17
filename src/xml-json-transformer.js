@@ -14,7 +14,7 @@ class XMLJSONTransformer {
         // Features to preserve during transformation
         preserveNamespaces: true,       // When false, namespace URIs are not included in the JSON
         preserveComments: true,
-        preserveProcessingInstructions: true,
+        preservePIs: true,
         preserveCDATA: true,
         preserveTextNodes: true,
         preserveWhitespace: false,
@@ -25,7 +25,7 @@ class XMLJSONTransformer {
         // Output options
         outputOptions: {
           prettyPrint: true,            // Pretty print both XML and JSON output
-          indent: 2,                    // Number of spaces for indentation (used for both XML and JSON)
+          indent: 3,                    // Number of spaces for indentation (used for both XML and JSON)
           
           // JSON-specific options
           json: {
@@ -284,7 +284,7 @@ class XMLJSONTransformer {
               
             case Node.PROCESSING_INSTRUCTION_NODE:
               // Handle processing instructions if configured to preserve them
-              if (this.config.preserveProcessingInstructions) {
+              if (this.config.preservePIs) {
                 nodeObj[this.config.propNames.processing].push(
                   `${childNode.target} ${childNode.data}`
                 );
@@ -501,7 +501,7 @@ class XMLJSONTransformer {
         }
         
         // Add processing instructions
-        if (this.config.preserveProcessingInstructions && Array.isArray(jsonObj[processingKey])) {
+        if (this.config.preservePIs && Array.isArray(jsonObj[processingKey])) {
           for (const piText of jsonObj[processingKey]) {
             const [target, data] = piText.split(' ', 2);
             const pi = doc.createProcessingInstruction(target, data || '');
@@ -535,13 +535,58 @@ class XMLJSONTransformer {
       return typeof str === 'string' && /<[a-z][\s\S]*>/i.test(str);
     }
     
+
+
+    _prettyPrintXML(xmlString) {
+      const PADDING = this.xmlIndent;
+    
+      // Normalize spacing between tags and content
+      const tokens = xmlString
+        .replace(/>\s*</g, '><') // collapse inter-tag whitespace
+        .replace(/</g, '\n<')    // newline before each tag
+        .replace(/>/g, '>\n')    // newline after each tag
+        .split('\n')             // split into lines
+        .map(line => line.trim())
+        .filter(line => line.length > 0); // remove empty lines
+    
+      let indentLevel = 0;
+      const result = [];
+    
+      for (let i = 0; i < tokens.length; i++) {
+        const line = tokens[i];
+    
+        const isClosingTag = /^<\/[^>]+>/.test(line);
+        const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
+        const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
+        const isComment = /^<!--.*-->$/.test(line);
+        const isCDATA = /^<!\[CDATA\[.*\]\]>$/.test(line);
+        const isProcessingInstruction = /^<\?.*\?>$/.test(line);
+        const isTextNode = !line.startsWith('<') && !line.endsWith('>');
+    
+        if (isClosingTag) {
+          indentLevel = Math.max(indentLevel - 1, 0);
+        }
+    
+        const indent = PADDING.repeat(indentLevel);
+        result.push(indent + line);
+    
+        if (isOpeningTag) {
+          indentLevel++;
+        }
+        // other types (self-closing, comments, etc.) do not affect indent level
+      }
+    
+      return result.join('\n');
+    }
+
+    
     /**
      * Pretty print an XML string
      * @param {string} xmlString - The XML string to pretty print
      * @returns {string} - The pretty printed XML string
      * @private
      */
-    _prettyPrintXML(xmlString) {
+    _prettyPrintXML2(xmlString) {
       const indent = this.xmlIndent;
       let formatted = "";
       let indentLevel = 0;
@@ -730,94 +775,94 @@ class XMLJSONTransformer {
       }
     }
     
-    /**
-     * Create a sample XML string for testing
-     * @returns {string} - A sample XML string
-     */
-    static createSampleXML() {
-      return `<?xml version="1.0" encoding="UTF-8"?>
-  <root xmlns="http://example.com/ns1" xmlns:ex="http://example.com/ns2">
-    <!-- This is a comment -->
-    <ex:child id="1" class="item">
-      <![CDATA[This is a CDATA section]]>
-      Some text content
-      <grandchild>More content</grandchild>
-    </ex:child>
-    <?xml-stylesheet type="text/css" href="style.css"?>
-    <empty />
-  </root>`;
-    }
+  //   /**
+  //    * Create a sample XML string for testing
+  //    * @returns {string} - A sample XML string
+  //    */
+  //   static createSampleXML() {
+  //     return `<?xml version="1.0" encoding="UTF-8"?>
+  // <root xmlns="http://example.com/ns1" xmlns:ex="http://example.com/ns2">
+  //   <!-- This is a comment -->
+  //   <ex:child id="1" class="item">
+  //     <![CDATA[This is a CDATA section]]>
+  //     Some text content
+  //     <grandchild>More content</grandchild>
+  //   </ex:child>
+  //   <?xml-stylesheet type="text/css" href="style.css"?>
+  //   <empty />
+  // </root>`;
+  //   }
     
-    /**
-     * Create a sample JSON object for testing
-     * @returns {Object} - A sample JSON object
-     */
-    static createSampleJSON() {
-      return {
-        "root": {
-          "@ns": "http://example.com/ns1",
-          "@val": "",
-          "@attrs": {
-            "xmlns": {
-              "@val": "http://example.com/ns1",
-              "@ns": ""
-            },
-            "xmlns:ex": {
-              "@val": "http://example.com/ns2",
-              "@ns": ""
-            }
-          },
-          "@cdata": [],
-          "@comments": ["This is a comment"],
-          "@processing": [],
-          "@children": [
-            {
-              "ex:child": {
-                "@ns": "http://example.com/ns2",
-                "@val": "Some text content",
-                "@attrs": {
-                  "id": {
-                    "@val": "1",
-                    "@ns": ""
-                  },
-                  "class": {
-                    "@val": "item",
-                    "@ns": ""
-                  }
-                },
-                "@cdata": ["This is a CDATA section"],
-                "@comments": [],
-                "@processing": [],
-                "@children": [
-                  {
-                    "grandchild": {
-                      "@ns": "",
-                      "@val": "More content",
-                      "@attrs": {},
-                      "@cdata": [],
-                      "@comments": [],
-                      "@processing": [],
-                      "@children": []
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "empty": {
-                "@ns": "",
-                "@val": "",
-                "@attrs": {},
-                "@cdata": [],
-                "@comments": [],
-                "@processing": [],
-                "@children": []
-              }
-            }
-          ]
-        }
-      };
-    }
+  //   /**
+  //    * Create a sample JSON object for testing
+  //    * @returns {Object} - A sample JSON object
+  //    */
+  //   static createSampleJSON() {
+  //     return {
+  //       "root": {
+  //         "@ns": "http://example.com/ns1",
+  //         "@val": "",
+  //         "@attrs": {
+  //           "xmlns": {
+  //             "@val": "http://example.com/ns1",
+  //             "@ns": ""
+  //           },
+  //           "xmlns:ex": {
+  //             "@val": "http://example.com/ns2",
+  //             "@ns": ""
+  //           }
+  //         },
+  //         "@cdata": [],
+  //         "@comments": ["This is a comment"],
+  //         "@processing": [],
+  //         "@children": [
+  //           {
+  //             "ex:child": {
+  //               "@ns": "http://example.com/ns2",
+  //               "@val": "Some text content",
+  //               "@attrs": {
+  //                 "id": {
+  //                   "@val": "1",
+  //                   "@ns": ""
+  //                 },
+  //                 "class": {
+  //                   "@val": "item",
+  //                   "@ns": ""
+  //                 }
+  //               },
+  //               "@cdata": ["This is a CDATA section"],
+  //               "@comments": [],
+  //               "@processing": [],
+  //               "@children": [
+  //                 {
+  //                   "grandchild": {
+  //                     "@ns": "",
+  //                     "@val": "More content",
+  //                     "@attrs": {},
+  //                     "@cdata": [],
+  //                     "@comments": [],
+  //                     "@processing": [],
+  //                     "@children": []
+  //                   }
+  //                 }
+  //               ]
+  //             }
+  //           },
+  //           {
+  //             "empty": {
+  //               "@ns": "",
+  //               "@val": "",
+  //               "@attrs": {},
+  //               "@cdata": [],
+  //               "@comments": [],
+  //               "@processing": [],
+  //               "@children": []
+  //             }
+  //           }
+  //         ]
+  //       }
+  //     };
+  //   }
   }
   
   // Export for browser and Node.js environments
