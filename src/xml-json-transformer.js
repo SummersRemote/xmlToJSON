@@ -4,836 +4,890 @@
  * namespaces, attributes, CDATA, comments, and processing instructions.
  */
 export class XMLJSONTransformer {
-    /**
-     * Creates a new XMLJSONTransformer with the specified configuration
-     * @param {Object} config - Configuration options
-     */
-    constructor(config = {}) {
-      // Default configuration
-      this.config = {
-        // Features to preserve during transformation
-        preserveNamespaces: true,       // When false, namespace URIs are not included in the JSON
-        preserveComments: true,
-        preservePIs: true,
-        preserveCDATA: true,
-        preserveTextNodes: true,
-        preserveWhitespace: false,
+  /**
+   * Creates a new XMLJSONTransformer with the specified configuration
+   * @param {Object} config - Configuration options
+   */
+  constructor(config = {}) {
+    // Default configuration
+    this.config = {
+      // Features to preserve during transformation
+      preserveNamespaces: true,       // When false, namespace URIs are not included in the JSON
+      preserveComments: true,
+      preservePIs: true,
+      preserveCDATA: true,
+      preserveTextNodes: true,
+      preserveWhitespace: false,
+      
+      // Element name handling
+      stripPrefixes: false,           // When true, namespace prefixes are removed from element and attribute names
+      
+      // Output options
+      outputOptions: {
+        prettyPrint: true,            // Pretty print both XML and JSON output
+        indent: 3,                    // Number of spaces for indentation (used for both XML and JSON)
         
-        // Element name handling
-        stripPrefixes: false,           // When true, namespace prefixes are removed from element and attribute names
-        
-        // Output options
-        outputOptions: {
-          prettyPrint: true,            // Pretty print both XML and JSON output
-          indent: 3,                    // Number of spaces for indentation (used for both XML and JSON)
-          
-          // JSON-specific options
-          json: {
-            compact: false,             // When true, empty arrays and objects are omitted
-            removeEmptyStrings: false   // When true, properties with empty string values are omitted
-          },
-          
-          // XML-specific options
-          xml: {
-            // Reserved for future XML-specific options
-          }
+        // JSON-specific options
+        json: {
+          compact: false,             // When true, empty arrays and objects are omitted
+          removeEmptyStrings: false   // When true, properties with empty string values are omitted
         },
         
-        // Property names in the JSON representation
-        propNames: {
-          namespace: "@ns",
-          value: "@val", 
-          attributes: "@attrs",
-          cdata: "@cdata",
-          comments: "@comments",
-          processing: "@processing",
-          children: "@children"
-        },
-        
-        // Override defaults with provided config
-        ...config
+        // XML-specific options
+        xml: {
+          // Reserved for future XML-specific options
+        }
+      },
+      
+      // Property names in the JSON representation
+      propNames: {
+        namespace: "@ns",
+        value: "@val", 
+        attributes: "@attrs",
+        cdata: "@cdata",
+        comments: "@comments",
+        processing: "@processing",
+        children: "@children"
+      },
+      
+      // Override defaults with provided config
+      ...config
+    };
+    
+    // Ensure backward compatibility for jsonOutput and xmlOutput config
+    if (config.jsonOutput || config.xmlOutput) {
+      this._migrateOldConfig(config);
+    }
+    
+    // Convert numeric indent to string for XML formatting
+    this.xmlIndent = typeof this.config.outputOptions.indent === 'number' 
+      ? ' '.repeat(this.config.outputOptions.indent) 
+      : '  ';
+    
+    // Create a reverse mapping for property names (for JSON to XML conversion)
+    this.propNamesReverse = {};
+    for (const [key, value] of Object.entries(this.config.propNames)) {
+      this.propNamesReverse[value] = key;
+    }
+  }
+  
+  /**
+   * Migrate from old config format to new consolidated format
+   * @param {Object} config - Old configuration object
+   * @private
+   */
+  _migrateOldConfig(config) {
+    // Handle jsonOutput configuration
+    if (config.jsonOutput) {
+      this.config.outputOptions.json = {
+        ...this.config.outputOptions.json,
+        ...config.jsonOutput
       };
       
-      // Ensure backward compatibility for jsonOutput and xmlOutput config
-      if (config.jsonOutput || config.xmlOutput) {
-        this._migrateOldConfig(config);
+      // Copy prettyPrint and indent if they exist
+      if (config.jsonOutput.prettyPrint !== undefined) {
+        this.config.outputOptions.prettyPrint = config.jsonOutput.prettyPrint;
       }
-      
-      // Convert numeric indent to string for XML formatting
-      this.xmlIndent = typeof this.config.outputOptions.indent === 'number' 
-        ? ' '.repeat(this.config.outputOptions.indent) 
-        : '  ';
-      
-      // Create a reverse mapping for property names (for JSON to XML conversion)
-      this.propNamesReverse = {};
-      for (const [key, value] of Object.entries(this.config.propNames)) {
-        this.propNamesReverse[value] = key;
+      if (config.jsonOutput.indent !== undefined) {
+        this.config.outputOptions.indent = config.jsonOutput.indent;
       }
     }
     
-    /**
-     * Migrate from old config format to new consolidated format
-     * @param {Object} config - Old configuration object
-     * @private
-     */
-    _migrateOldConfig(config) {
-      // Handle jsonOutput configuration
-      if (config.jsonOutput) {
-        this.config.outputOptions.json = {
-          ...this.config.outputOptions.json,
-          ...config.jsonOutput
-        };
-        
-        // Copy prettyPrint and indent if they exist
-        if (config.jsonOutput.prettyPrint !== undefined) {
-          this.config.outputOptions.prettyPrint = config.jsonOutput.prettyPrint;
-        }
-        if (config.jsonOutput.indent !== undefined) {
-          this.config.outputOptions.indent = config.jsonOutput.indent;
-        }
-      }
+    // Handle xmlOutput configuration
+    if (config.xmlOutput) {
+      this.config.outputOptions.xml = {
+        ...this.config.outputOptions.xml,
+        ...config.xmlOutput
+      };
       
-      // Handle xmlOutput configuration
-      if (config.xmlOutput) {
-        this.config.outputOptions.xml = {
-          ...this.config.outputOptions.xml,
-          ...config.xmlOutput
-        };
-        
-        // Copy prettyPrint and indent if they exist and not already set by jsonOutput
-        if (config.xmlOutput.prettyPrint !== undefined && !config.jsonOutput?.prettyPrint) {
-          this.config.outputOptions.prettyPrint = config.xmlOutput.prettyPrint;
-        }
-        if (config.xmlOutput.indent !== undefined && !config.jsonOutput?.indent) {
-          this.config.outputOptions.indent = config.xmlOutput.indent;
-        }
+      // Copy prettyPrint and indent if they exist and not already set by jsonOutput
+      if (config.xmlOutput.prettyPrint !== undefined && !config.jsonOutput?.prettyPrint) {
+        this.config.outputOptions.prettyPrint = config.xmlOutput.prettyPrint;
+      }
+      if (config.xmlOutput.indent !== undefined && !config.jsonOutput?.indent) {
+        this.config.outputOptions.indent = config.xmlOutput.indent;
       }
     }
+  }
+  
+  /**
+   * Transform an XML string to a JSON object
+   * @param {string} xmlString - The XML string to transform
+   * @param {boolean} asString - Whether to return the result as a formatted JSON string
+   * @returns {Object|string} - The transformed JSON object or string
+   */
+  xmlToJSON(xmlString, asString = false) {
+    // Create a DOM parser
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
     
-    /**
-     * Transform an XML string to a JSON object
-     * @param {string} xmlString - The XML string to transform
-     * @param {boolean} asString - Whether to return the result as a formatted JSON string
-     * @returns {Object|string} - The transformed JSON object or string
-     */
-    xmlToJSON(xmlString, asString = false) {
-      // Create a DOM parser
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-      
-      // Check for parsing errors
-      const parserError = xmlDoc.querySelector("parsererror");
-      if (parserError) {
-        throw new Error(`XML parsing error: ${parserError.textContent}`);
-      }
-      
-      // Start with the document element
-      const rootNode = xmlDoc.documentElement;
-      const result = this._processNode(rootNode);
-      
-      // Return formatted JSON string if requested
-      if (asString) {
-        return this.jsonToString(result);
-      }
-      
-      return result;
+    // Check for parsing errors
+    const parserError = xmlDoc.querySelector("parsererror");
+    if (parserError) {
+      throw new Error(`XML parsing error: ${parserError.textContent}`);
     }
     
-    /**
-     * Format a JSON object according to the current configuration
-     * @param {Object} jsonObj - The JSON object to format
-     * @returns {string} - The formatted JSON string
-     */
-    jsonToString(jsonObj) {
-      if (this.config.outputOptions.prettyPrint) {
-        return JSON.stringify(jsonObj, null, this.config.outputOptions.indent);
-      }
-      return JSON.stringify(jsonObj);
+    // Start with the document element
+    const rootNode = xmlDoc.documentElement;
+    const result = this._processNode(rootNode);
+    
+    // Return formatted JSON string if requested
+    if (asString) {
+      return this.jsonToString(result);
     }
     
-    /**
-     * Process a DOM node and convert it to our JSON format
-     * @param {Node} node - The DOM node to process
-     * @returns {Object} - The JSON representation of the node
-     * @private
-     */
-    _processNode(node) {
-      // Get the node name (tag name for elements)
-      let nodeName = node.nodeName;
+    return result;
+  }
+  
+  /**
+   * Format a JSON object according to the current configuration
+   * @param {Object} jsonObj - The JSON object to format
+   * @returns {string} - The formatted JSON string
+   */
+  jsonToString(jsonObj) {
+    if (this.config.outputOptions.prettyPrint) {
+      return JSON.stringify(jsonObj, null, this.config.outputOptions.indent);
+    }
+    return JSON.stringify(jsonObj);
+  }
+  
+  /**
+   * Process a DOM node and convert it to our JSON format
+   * @param {Node} node - The DOM node to process
+   * @returns {Object} - The JSON representation of the node
+   * @private
+   */
+  _processNode(node) {
+    // Get the node name (tag name for elements)
+    let nodeName = node.nodeName;
+    
+    // Strip namespace prefix if configured
+    if (this.config.stripPrefixes && nodeName.includes(':')) {
+      nodeName = nodeName.split(':').pop();
+    }
+    
+    // Create the base JSON object
+    const result = {};
+    const nodeObj = {};
+    
+    // Always add namespace when preserving namespaces is enabled
+    if (this.config.preserveNamespaces) {
+      nodeObj[this.config.propNames.namespace] = node.namespaceURI || "";
+    }
+    
+    // Check if this node has mixed content (text nodes and element nodes)
+    const hasMixedContent = this._hasMixedContent(node);
+    
+    if (hasMixedContent) {
+      // For mixed content, get the serialized inner content as text
+      nodeObj[this.config.propNames.value] = node.innerHTML || this._getInnerHTML(node);
       
-      // Strip namespace prefix if configured
-      if (this.config.stripPrefixes && nodeName.includes(':')) {
-        nodeName = nodeName.split(':').pop();
-      }
-      
-      // Create the base JSON object
-      const result = {};
-      const nodeObj = {};
-      
-      // Add namespace if it exists and preserving namespaces
-      if (this.config.preserveNamespaces && node.namespaceURI) {
-        nodeObj[this.config.propNames.namespace] = node.namespaceURI;
-      }
-      
-      // Check if this node has mixed content (text nodes and element nodes)
-      const hasMixedContent = this._hasMixedContent(node);
-      
-      if (hasMixedContent) {
-        // For mixed content, get the serialized inner content as text
-        nodeObj[this.config.propNames.value] = node.innerHTML || this._getInnerHTML(node);
-        
-        // Don't process child elements for mixed content
-        nodeObj[this.config.propNames.attributes] = {};
-        nodeObj[this.config.propNames.cdata] = [];
-        nodeObj[this.config.propNames.comments] = [];
-        nodeObj[this.config.propNames.processing] = [];
-        nodeObj[this.config.propNames.children] = [];
+      // Don't process child elements for mixed content
+      nodeObj[this.config.propNames.attributes] = {};
+      nodeObj[this.config.propNames.cdata] = [];
+      nodeObj[this.config.propNames.comments] = [];
+      nodeObj[this.config.propNames.processing] = [];
+      nodeObj[this.config.propNames.children] = [];
+    } else {
+      // Handle as regular content
+      // Add value if it exists
+      if (node.nodeValue) {
+        nodeObj[this.config.propNames.value] = node.nodeValue;
+      } else if (node.nodeType === Node.ELEMENT_NODE && 
+                 node.childNodes.length === 1 && 
+                 node.childNodes[0].nodeType === Node.TEXT_NODE) {
+        // Simple text content case
+        nodeObj[this.config.propNames.value] = node.textContent;
       } else {
-        // Handle as regular content
-        // Add value if it exists
-        if (node.nodeValue) {
-          nodeObj[this.config.propNames.value] = node.nodeValue;
-        } else if (node.nodeType === Node.ELEMENT_NODE && 
-                   node.childNodes.length === 1 && 
-                   node.childNodes[0].nodeType === Node.TEXT_NODE) {
-          // Simple text content case
-          nodeObj[this.config.propNames.value] = node.textContent;
-        } else {
-          nodeObj[this.config.propNames.value] = "";
-        }
-        
-        // Always initialize empty collections (for consistency with the schema)
-        nodeObj[this.config.propNames.attributes] = {};
-        nodeObj[this.config.propNames.cdata] = [];
-        nodeObj[this.config.propNames.comments] = [];
-        nodeObj[this.config.propNames.processing] = [];
-        nodeObj[this.config.propNames.children] = [];
+        nodeObj[this.config.propNames.value] = "";
       }
       
-      // Process attributes if this is an element
-      if (node.nodeType === Node.ELEMENT_NODE && node.hasAttributes()) {
-        for (let i = 0; i < node.attributes.length; i++) {
-          const attr = node.attributes[i];
-          
-          // Skip namespace declarations if not preserving namespaces
-          if (!this.config.preserveNamespaces && 
-              (attr.name === 'xmlns' || attr.name.startsWith('xmlns:'))) {
-            continue;
-          }
-          
-          // Process attribute name (strip prefix if configured)
-          let attrName = attr.name;
-          if (this.config.stripPrefixes && attrName.includes(':')) {
-            attrName = attrName.split(':').pop();
-          }
-          
-          const attrObj = {};
-          
-          // Only add value property if not empty or if we're not removing empty strings
-          if (attr.value || !this.config.outputOptions.json.removeEmptyStrings) {
-            attrObj[this.config.propNames.value] = attr.value;
-          }
-          
-          // Only add namespace if it exists and preserving namespaces
-          if (this.config.preserveNamespaces && attr.namespaceURI) {
-            attrObj[this.config.propNames.namespace] = attr.namespaceURI;
-          }
-          
-          nodeObj[this.config.propNames.attributes][attrName] = attrObj;
-        }
-      }
-      
-      // Process child nodes only if not mixed content
-      if (!hasMixedContent && node.hasChildNodes()) {
-        const childNodes = [];
-        let textContent = "";
-        
-        for (let i = 0; i < node.childNodes.length; i++) {
-          const childNode = node.childNodes[i];
-          
-          switch (childNode.nodeType) {
-            case Node.ELEMENT_NODE:
-              // Process child element
-              childNodes.push(this._processNode(childNode));
-              break;
-              
-            case Node.TEXT_NODE:
-              // Handle text nodes if configured to preserve them
-              if (this.config.preserveTextNodes) {
-                // Skip pure whitespace nodes if not preserving whitespace
-                if (!this.config.preserveWhitespace && childNode.textContent.trim() === "") {
-                  continue;
-                }
-                textContent += childNode.textContent;
-              }
-              break;
-              
-            case Node.CDATA_SECTION_NODE:
-              // Handle CDATA sections if configured to preserve them
-              if (this.config.preserveCDATA) {
-                nodeObj[this.config.propNames.cdata].push(childNode.textContent);
-              }
-              break;
-              
-            case Node.COMMENT_NODE:
-              // Handle comments if configured to preserve them
-              if (this.config.preserveComments) {
-                nodeObj[this.config.propNames.comments].push(childNode.textContent);
-              }
-              break;
-              
-            case Node.PROCESSING_INSTRUCTION_NODE:
-              // Handle processing instructions if configured to preserve them
-              if (this.config.preservePIs) {
-                nodeObj[this.config.propNames.processing].push(
-                  `${childNode.target} ${childNode.data}`
-                );
-              }
-              break;
-          }
-        }
-        
-        // Add text content as a value property if present and not already set
-        if (textContent && this.config.preserveTextNodes && !nodeObj[this.config.propNames.value]) {
-          nodeObj[this.config.propNames.value] = textContent;
-        }
-        
-        // Add child nodes if present
-        if (childNodes.length > 0) {
-          nodeObj[this.config.propNames.children] = childNodes;
-        }
-      }
-      
-      // If compact mode is enabled, remove empty collections
-      if (this.config.outputOptions.json.compact) {
-        if (Object.keys(nodeObj[this.config.propNames.attributes]).length === 0) {
-          delete nodeObj[this.config.propNames.attributes];
-        }
-        
-        if (nodeObj[this.config.propNames.cdata].length === 0) {
-          delete nodeObj[this.config.propNames.cdata];
-        }
-        
-        if (nodeObj[this.config.propNames.comments].length === 0) {
-          delete nodeObj[this.config.propNames.comments];
-        }
-        
-        if (nodeObj[this.config.propNames.processing].length === 0) {
-          delete nodeObj[this.config.propNames.processing];
-        }
-        
-        if (nodeObj[this.config.propNames.children].length === 0) {
-          delete nodeObj[this.config.propNames.children];
-        }
-        
-        // Remove empty value strings if configured
-        if (this.config.outputOptions.json.removeEmptyStrings && 
-            nodeObj[this.config.propNames.value] === "") {
-          delete nodeObj[this.config.propNames.value];
-        }
-      }
-      
-      result[nodeName] = nodeObj;
-      return result;
+      // Always initialize empty collections (for consistency with the schema)
+      nodeObj[this.config.propNames.attributes] = {};
+      nodeObj[this.config.propNames.cdata] = [];
+      nodeObj[this.config.propNames.comments] = [];
+      nodeObj[this.config.propNames.processing] = [];
+      nodeObj[this.config.propNames.children] = [];
     }
     
-    /**
-     * Check if a node has mixed content (both text and element nodes)
-     * @param {Node} node - The DOM node to check
-     * @returns {boolean} - Whether the node has mixed content
-     * @private
-     */
-    _hasMixedContent(node) {
-      if (node.nodeType !== Node.ELEMENT_NODE || !node.hasChildNodes()) {
-        return false;
+    // Process attributes if this is an element
+    if (node.nodeType === Node.ELEMENT_NODE && node.hasAttributes()) {
+      for (let i = 0; i < node.attributes.length; i++) {
+        const attr = node.attributes[i];
+        
+        // Skip namespace declarations if not preserving namespaces
+        if (!this.config.preserveNamespaces && 
+            (attr.name === 'xmlns' || attr.name.startsWith('xmlns:'))) {
+          continue;
+        }
+        
+        // Process attribute name (strip prefix if configured)
+        let attrName = attr.name;
+        if (this.config.stripPrefixes && attrName.includes(':')) {
+          attrName = attrName.split(':').pop();
+        }
+        
+        const attrObj = {};
+        
+        // Only add value property if not empty or if we're not removing empty strings
+        if (attr.value || !this.config.outputOptions.json.removeEmptyStrings) {
+          attrObj[this.config.propNames.value] = attr.value;
+        }
+        
+        // Always add namespace if preserving namespaces
+        if (this.config.preserveNamespaces) {
+          attrObj[this.config.propNames.namespace] = attr.namespaceURI || "";
+        }
+        
+        nodeObj[this.config.propNames.attributes][attrName] = attrObj;
       }
-      
-      let hasTextNode = false;
-      let hasElementNode = false;
+    }
+    
+    // Process child nodes only if not mixed content
+    if (!hasMixedContent && node.hasChildNodes()) {
+      const childNodes = [];
+      let textContent = "";
       
       for (let i = 0; i < node.childNodes.length; i++) {
         const childNode = node.childNodes[i];
         
-        if (childNode.nodeType === Node.TEXT_NODE) {
-          // Skip pure whitespace nodes when checking for text content
-          if (childNode.textContent.trim() !== "") {
-            hasTextNode = true;
-          }
-        } else if (childNode.nodeType === Node.ELEMENT_NODE) {
-          hasElementNode = true;
+        switch (childNode.nodeType) {
+          case Node.ELEMENT_NODE:
+            // Process child element
+            childNodes.push(this._processNode(childNode));
+            break;
+            
+          case Node.TEXT_NODE:
+            // Handle text nodes if configured to preserve them
+            if (this.config.preserveTextNodes) {
+              // Skip pure whitespace nodes if not preserving whitespace
+              if (!this.config.preserveWhitespace && childNode.textContent.trim() === "") {
+                continue;
+              }
+              textContent += childNode.textContent;
+            }
+            break;
+            
+          case Node.CDATA_SECTION_NODE:
+            // Handle CDATA sections if configured to preserve them
+            if (this.config.preserveCDATA) {
+              nodeObj[this.config.propNames.cdata].push(childNode.textContent);
+            }
+            break;
+            
+          case Node.COMMENT_NODE:
+            // Handle comments if configured to preserve them
+            if (this.config.preserveComments) {
+              nodeObj[this.config.propNames.comments].push(childNode.textContent);
+            }
+            break;
+            
+          case Node.PROCESSING_INSTRUCTION_NODE:
+            // Handle processing instructions if configured to preserve them
+            if (this.config.preservePIs) {
+              nodeObj[this.config.propNames.processing].push(
+                `${childNode.target} ${childNode.data}`
+              );
+            }
+            break;
         }
+      }
+      
+      // Add text content as a value property if present and not already set
+      if (textContent && this.config.preserveTextNodes && !nodeObj[this.config.propNames.value]) {
+        nodeObj[this.config.propNames.value] = textContent;
+      }
+      
+      // Add child nodes if present
+      if (childNodes.length > 0) {
+        nodeObj[this.config.propNames.children] = childNodes;
+      }
+    }
+    
+    // If compact mode is enabled, remove empty collections
+    if (this.config.outputOptions.json.compact) {
+      if (Object.keys(nodeObj[this.config.propNames.attributes]).length === 0) {
+        delete nodeObj[this.config.propNames.attributes];
+      }
+      
+      if (nodeObj[this.config.propNames.cdata].length === 0) {
+        delete nodeObj[this.config.propNames.cdata];
+      }
+      
+      if (nodeObj[this.config.propNames.comments].length === 0) {
+        delete nodeObj[this.config.propNames.comments];
+      }
+      
+      if (nodeObj[this.config.propNames.processing].length === 0) {
+        delete nodeObj[this.config.propNames.processing];
+      }
+      
+      if (nodeObj[this.config.propNames.children].length === 0) {
+        delete nodeObj[this.config.propNames.children];
+      }
+      
+      // Remove empty value strings if configured
+      if (this.config.outputOptions.json.removeEmptyStrings && 
+          nodeObj[this.config.propNames.value] === "") {
+        delete nodeObj[this.config.propNames.value];
+      }
+    }
+    
+    result[nodeName] = nodeObj;
+    return result;
+  }
+  
+  /**
+   * Check if a node has mixed content (both text and element nodes)
+   * @param {Node} node - The DOM node to check
+   * @returns {boolean} - Whether the node has mixed content
+   * @private
+   */
+  _hasMixedContent(node) {
+    if (node.nodeType !== Node.ELEMENT_NODE || !node.hasChildNodes()) {
+      return false;
+    }
+    
+    let hasTextNode = false;
+    let hasElementNode = false;
+    
+    for (let i = 0; i < node.childNodes.length; i++) {
+      const childNode = node.childNodes[i];
+      
+      if (childNode.nodeType === Node.TEXT_NODE) {
+        // Skip pure whitespace nodes when checking for text content
+        if (childNode.textContent.trim() !== "") {
+          hasTextNode = true;
+        }
+      } else if (childNode.nodeType === Node.ELEMENT_NODE) {
+        hasElementNode = true;
+      }
+      
+      // Once we've found both types, we can return early
+      if (hasTextNode && hasElementNode) {
+        return true;
+      }
+    }
+    
+    return hasTextNode && hasElementNode;
+  }
+  
+  /**
+   * Get the innerHTML of a node (for browsers that don't support it)
+   * @param {Node} node - The DOM node
+   * @returns {string} - The innerHTML of the node
+   * @private
+   */
+  _getInnerHTML(node) {
+    if (node.innerHTML !== undefined) {
+      return node.innerHTML;
+    }
+    
+    // Fallback implementation for environments without innerHTML
+    const serializer = new XMLSerializer();
+    let result = "";
+    
+    for (let i = 0; i < node.childNodes.length; i++) {
+      result += serializer.serializeToString(node.childNodes[i]);
+    }
+    
+    return result;
+  }
+
+  /**
+   * Helper method to manage namespace prefixes when converting from JSON to XML
+   * @param {Object} jsonObj - The JSON object being transformed
+   * @returns {Map} - Map of namespace URIs to generated prefixes
+   * @private
+   */
+  _manageNamespacePrefixes(jsonObj) {
+    // Only do this when stripPrefixes is enabled but preserveNamespaces is true
+    if (!this.config.stripPrefixes || !this.config.preserveNamespaces) {
+      return null;
+    }
+    
+    const nsKey = this.config.propNames.namespace;
+    const childrenKey = this.config.propNames.children;
+    const attrsKey = this.config.propNames.attributes;
+    
+    // Map to store namespace URI to prefix mappings
+    const nsMap = new Map();
+    // Counter for generating unique prefixes
+    let prefixCounter = 0;
+    
+    // Function to process a node and generate prefixes
+    const processNode = (node, nodeName) => {
+      // Check if this node has a namespace
+      if (node[nsKey] && node[nsKey] !== '') {
+        const nsURI = node[nsKey];
         
-        // Once we've found both types, we can return early
-        if (hasTextNode && hasElementNode) {
-          return true;
+        // If we haven't seen this namespace before, generate a prefix
+        if (!nsMap.has(nsURI)) {
+          // Generate a new prefix (ns1, ns2, etc.)
+          const prefix = `ns${++prefixCounter}`;
+          nsMap.set(nsURI, prefix);
+          
+          // Store the generated prefix on the node for later use
+          node._generatedPrefix = prefix;
+        } else {
+          // Use the existing prefix
+          node._generatedPrefix = nsMap.get(nsURI);
         }
       }
       
-      return hasTextNode && hasElementNode;
+      // Process attributes
+      if (node[attrsKey]) {
+        for (const [attrName, attrObj] of Object.entries(node[attrsKey])) {
+          if (attrObj[nsKey] && attrObj[nsKey] !== '') {
+            const nsURI = attrObj[nsKey];
+            
+            // If we haven't seen this namespace before, generate a prefix
+            if (!nsMap.has(nsURI)) {
+              const prefix = `ns${++prefixCounter}`;
+              nsMap.set(nsURI, prefix);
+            }
+            
+            // Store the generated prefix on the attribute
+            attrObj._generatedPrefix = nsMap.get(nsURI);
+          }
+        }
+      }
+      
+      // Process children recursively
+      if (Array.isArray(node[childrenKey])) {
+        for (const childObj of node[childrenKey]) {
+          for (const [childName, childData] of Object.entries(childObj)) {
+            if (!childName.startsWith('@')) {
+              processNode(childData, childName);
+            }
+          }
+        }
+      }
+    };
+    
+    // Start processing from the root node
+    const rootName = Object.keys(jsonObj)[0];
+    processNode(jsonObj[rootName], rootName);
+    
+    // Return the namespace map for use in creating the XML
+    return nsMap;
+  }
+  
+  /**
+   * Transform a JSON object to an XML string
+   * @param {Object} jsonObj - The JSON object to transform
+   * @returns {string} - The transformed XML string
+   */
+  jsonToXML(jsonObj) {
+    // Create a new XML document
+    const doc = document.implementation.createDocument(null, null, null);
+    
+    // Process namespace prefixes if needed
+    const nsMap = this._manageNamespacePrefixes(jsonObj);
+    
+    // Process the root element
+    const rootElName = Object.keys(jsonObj).find(key => !key.startsWith('@'));
+    if (!rootElName) {
+      throw new Error("Invalid JSON: No root element found");
     }
     
-    /**
-     * Get the innerHTML of a node (for browsers that don't support it)
-     * @param {Node} node - The DOM node
-     * @returns {string} - The innerHTML of the node
-     * @private
-     */
-    _getInnerHTML(node) {
-      if (node.innerHTML !== undefined) {
-        return node.innerHTML;
-      }
-      
-      // Fallback implementation for environments without innerHTML
-      const serializer = new XMLSerializer();
-      let result = "";
-      
-      for (let i = 0; i < node.childNodes.length; i++) {
-        result += serializer.serializeToString(node.childNodes[i]);
-      }
-      
-      return result;
+    const rootJSON = jsonObj[rootElName];
+    const rootEl = this._createElementFromJSON(doc, rootElName, rootJSON, nsMap);
+    doc.appendChild(rootEl);
+    
+    // Serialize the XML document
+    const serializer = new XMLSerializer();
+    let xmlString = serializer.serializeToString(doc);
+    
+    // Pretty print if configured
+    if (this.config.outputOptions.prettyPrint) {
+      xmlString = this._prettyPrintXML(xmlString);
     }
     
-    /**
-     * Transform a JSON object to an XML string
-     * @param {Object} jsonObj - The JSON object to transform
-     * @returns {string} - The transformed XML string
-     */
-    jsonToXML(jsonObj) {
-      // Create a new XML document
-      const doc = document.implementation.createDocument(null, null, null);
-      
-      // Process the root element
-      const rootElName = Object.keys(jsonObj).find(key => !key.startsWith('@'));
-      if (!rootElName) {
-        throw new Error("Invalid JSON: No root element found");
-      }
-      
-      const rootJSON = jsonObj[rootElName];
-      const rootEl = this._createElementFromJSON(doc, rootElName, rootJSON);
-      doc.appendChild(rootEl);
-      
-      // Serialize the XML document
-      const serializer = new XMLSerializer();
-      let xmlString = serializer.serializeToString(doc);
-      
-      // Pretty print if configured
-      if (this.config.outputOptions.prettyPrint) {
-        xmlString = this._prettyPrintXML(xmlString);
-      }
-      
-      return xmlString;
-    }
+    return xmlString;
+  }
+  
+  /**
+   * Create a DOM element from a JSON object
+   * @param {Document} doc - The DOM document
+   * @param {string} elName - The element name
+   * @param {Object} jsonObj - The JSON object
+   * @param {Map} nsMap - Namespace URI to prefix map
+   * @returns {Element} - The created DOM element
+   * @private
+   */
+  _createElementFromJSON(doc, elName, jsonObj, nsMap = null) {
+    const nsKey = this.config.propNames.namespace;
+    const valKey = this.config.propNames.value;
+    const attrsKey = this.config.propNames.attributes;
+    const cdataKey = this.config.propNames.cdata;
+    const commentsKey = this.config.propNames.comments;
+    const processingKey = this.config.propNames.processing;
+    const childrenKey = this.config.propNames.children;
     
-    /**
-     * Create a DOM element from a JSON object
-     * @param {Document} doc - The DOM document
-     * @param {string} elName - The element name
-     * @param {Object} jsonObj - The JSON object
-     * @returns {Element} - The created DOM element
-     * @private
-     */
-    _createElementFromJSON(doc, elName, jsonObj) {
-      const nsKey = this.config.propNames.namespace;
-      const valKey = this.config.propNames.value;
-      const attrsKey = this.config.propNames.attributes;
-      const cdataKey = this.config.propNames.cdata;
-      const commentsKey = this.config.propNames.comments;
-      const processingKey = this.config.propNames.processing;
-      const childrenKey = this.config.propNames.children;
+    // Create the element (with namespace if provided and preserving namespaces)
+    let element;
+    const nsURI = jsonObj[nsKey] || '';
+    
+    // Check if we need to use a generated prefix (when stripPrefixes is enabled)
+    if (this.config.preserveNamespaces && nsURI && this.config.stripPrefixes && nsMap && nsMap.has(nsURI)) {
+      // Get the generated prefix for this namespace
+      const prefix = nsMap.get(nsURI);
+      const qualifiedName = `${prefix}:${elName}`;
       
-      // Create the element (with namespace if provided and preserving namespaces)
-      let element;
-      if (jsonObj[nsKey] && this.config.preserveNamespaces) {
-        element = doc.createElementNS(jsonObj[nsKey], elName);
-      } else {
+      // Create element with the prefixed name
+      try {
+        element = doc.createElementNS(nsURI, qualifiedName);
+        
+        // Add namespace declaration if this is the first time using this prefix
+        if (jsonObj._generatedPrefix === prefix) {
+          element.setAttributeNS('http://www.w3.org/2000/xmlns/', `xmlns:${prefix}`, nsURI);
+        }
+      } catch (error) {
+        console.warn(`Error creating element with namespace: ${error.message}`);
         element = doc.createElement(elName);
       }
-      
-      // Add attributes
-      if (jsonObj[attrsKey]) {
-        for (const [attrName, attrObj] of Object.entries(jsonObj[attrsKey])) {
-          // Handle compact format where attributes might not have both value and namespace
-          const attrValue = attrObj[valKey] !== undefined ? attrObj[valKey] : "";
-          const attrNs = attrObj[nsKey];
+    } else if (nsURI && this.config.preserveNamespaces) {
+      // Use the original namespace approach when prefixes aren't stripped
+      try {
+        element = doc.createElementNS(nsURI, elName);
+        
+        // If the element doesn't have a prefix but has a namespace, add a default namespace declaration
+        if (!elName.includes(':') && nsURI) {
+          element.setAttribute('xmlns', nsURI);
+        }
+      } catch (error) {
+        console.warn(`Error creating element with namespace: ${error.message}`);
+        element = doc.createElement(elName);
+      }
+    } else {
+      // No namespace or not preserving namespaces
+      element = doc.createElement(elName);
+    }
+    
+    // Add attributes
+    if (jsonObj[attrsKey]) {
+      for (const [attrName, attrObj] of Object.entries(jsonObj[attrsKey])) {
+        // Handle compact format where attributes might not have both value and namespace
+        const attrValue = attrObj[valKey] !== undefined ? attrObj[valKey] : '';
+        const attrNs = attrObj[nsKey];
+        
+        // Check if we need to use a generated prefix for this attribute
+        if (attrNs && this.config.preserveNamespaces && this.config.stripPrefixes && 
+            nsMap && nsMap.has(attrNs) && attrObj._generatedPrefix) {
+          const prefix = attrObj._generatedPrefix;
+          const qualifiedName = `${prefix}:${attrName}`;
           
-          // Use namespace only if preserving namespaces
-          if (attrNs && this.config.preserveNamespaces) {
-            element.setAttributeNS(attrNs, attrName, attrValue);
-          } else {
+          try {
+            // Set the attribute with namespace
+            element.setAttributeNS(attrNs, qualifiedName, attrValue);
+            
+            // Add namespace declaration if needed
+            if (!element.hasAttributeNS('http://www.w3.org/2000/xmlns/', `xmlns:${prefix}`)) {
+              element.setAttributeNS('http://www.w3.org/2000/xmlns/', `xmlns:${prefix}`, attrNs);
+            }
+          } catch (error) {
+            console.warn(`Error setting attribute with namespace: ${error.message}`);
             element.setAttribute(attrName, attrValue);
           }
+        } else if (attrNs && this.config.preserveNamespaces) {
+          // Use namespace with original attribute name
+          try {
+            // If attribute name already contains a prefix, use it
+            if (attrName.includes(':')) {
+              element.setAttributeNS(attrNs, attrName, attrValue);
+            } else {
+              // Otherwise, try to find a suitable prefix for this namespace
+              // For simplicity, just use the attribute name without a prefix
+              element.setAttribute(attrName, attrValue);
+            }
+          } catch (error) {
+            console.warn(`Error setting attribute with namespace: ${error.message}`);
+            element.setAttribute(attrName, attrValue);
+          }
+        } else {
+          // No namespace or not preserving namespaces
+          element.setAttribute(attrName, attrValue);
         }
       }
-      
-      // Check if content is mixed (contains HTML markup)
-      const value = jsonObj[valKey];
-      if (value && this._containsHtmlMarkup(value)) {
-        // For mixed content, set innerHTML
-        if (typeof element.innerHTML !== 'undefined') {
-          element.innerHTML = value;
-        } else {
-          // Fallback for environments without innerHTML
-          // This is a simplified approach and may not handle all cases
-          element.textContent = value;
-        }
-      } else if (value !== undefined) {
-        // For simple text content
+    }
+    
+    // Check if content is mixed (contains HTML markup)
+    const value = jsonObj[valKey];
+    if (value && this._containsHtmlMarkup(value)) {
+      // For mixed content, set innerHTML
+      if (typeof element.innerHTML !== 'undefined') {
+        element.innerHTML = value;
+      } else {
+        // Fallback for environments without innerHTML
+        // This is a simplified approach and may not handle all cases
         element.textContent = value;
       }
+    } else if (value !== undefined) {
+      // For simple text content
+      element.textContent = value;
+    }
+    
+    // Only add special nodes and children if not already handling mixed content
+    if (!value || !this._containsHtmlMarkup(value)) {
+      // Add CDATA sections
+      if (this.config.preserveCDATA && Array.isArray(jsonObj[cdataKey])) {
+        for (const cdataText of jsonObj[cdataKey]) {
+          const cdataSection = doc.createCDATASection(cdataText);
+          element.appendChild(cdataSection);
+        }
+      }
       
-      // Only add special nodes and children if not already handling mixed content
-      if (!value || !this._containsHtmlMarkup(value)) {
-        // Add CDATA sections
-        if (this.config.preserveCDATA && Array.isArray(jsonObj[cdataKey])) {
-          for (const cdataText of jsonObj[cdataKey]) {
-            const cdataSection = doc.createCDATASection(cdataText);
-            element.appendChild(cdataSection);
-          }
+      // Add comments
+      if (this.config.preserveComments && Array.isArray(jsonObj[commentsKey])) {
+        for (const commentText of jsonObj[commentsKey]) {
+          const comment = doc.createComment(commentText);
+          element.appendChild(comment);
         }
-        
-        // Add comments
-        if (this.config.preserveComments && Array.isArray(jsonObj[commentsKey])) {
-          for (const commentText of jsonObj[commentsKey]) {
-            const comment = doc.createComment(commentText);
-            element.appendChild(comment);
-          }
+      }
+      
+      // Add processing instructions
+      if (this.config.preservePIs && Array.isArray(jsonObj[processingKey])) {
+        for (const piText of jsonObj[processingKey]) {
+          const [target, data] = piText.split(' ', 2);
+          const pi = doc.createProcessingInstruction(target, data || '');
+          element.appendChild(pi);
         }
-        
-        // Add processing instructions
-        if (this.config.preservePIs && Array.isArray(jsonObj[processingKey])) {
-          for (const piText of jsonObj[processingKey]) {
-            const [target, data] = piText.split(' ', 2);
-            const pi = doc.createProcessingInstruction(target, data || '');
-            element.appendChild(pi);
-          }
-        }
-        
-        // Process children recursively
-        if (Array.isArray(jsonObj[childrenKey])) {
-          for (const childObj of jsonObj[childrenKey]) {
-            for (const [childName, childData] of Object.entries(childObj)) {
-              if (!childName.startsWith('@')) {
-                const childElement = this._createElementFromJSON(doc, childName, childData);
-                element.appendChild(childElement);
-              }
+      }
+      
+      // Process children recursively
+      if (Array.isArray(jsonObj[childrenKey])) {
+        for (const childObj of jsonObj[childrenKey]) {
+          for (const [childName, childData] of Object.entries(childObj)) {
+            if (!childName.startsWith('@')) {
+              const childElement = this._createElementFromJSON(doc, childName, childData, nsMap);
+              element.appendChild(childElement);
             }
           }
         }
       }
-      
-      return element;
     }
     
-    /**
-     * Check if a string contains HTML markup
-     * @param {string} str - The string to check
-     * @returns {boolean} - Whether the string contains HTML markup
-     * @private
-     */
-    _containsHtmlMarkup(str) {
-      return typeof str === 'string' && /<[a-z][\s\S]*>/i.test(str);
-    }
-    
-    _prettyPrintXML(xmlString) {
-      const PADDING = this.xmlIndent;
-    
-      // Normalize spacing between tags and content
-      const tokens = xmlString
-        .replace(/>\s*</g, '><') // collapse inter-tag whitespace
-        .replace(/</g, '\n<')    // newline before each tag
-        .replace(/>/g, '>\n')    // newline after each tag
-        .split('\n')             // split into lines
-        .map(line => line.trim())
-        .filter(line => line.length > 0); // remove empty lines
-    
-      let indentLevel = 0;
-      const result = [];
-    
-      for (let i = 0; i < tokens.length; i++) {
-        const line = tokens[i];
-    
-        const isClosingTag = /^<\/[^>]+>/.test(line);
-        const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
-        const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
-        const isComment = /^<!--.*-->$/.test(line);
-        const isCDATA = /^<!\[CDATA\[.*\]\]>$/.test(line);
-        const isProcessingInstruction = /^<\?.*\?>$/.test(line);
-        const isTextNode = !line.startsWith('<') && !line.endsWith('>');
-    
-        if (isClosingTag) {
-          indentLevel = Math.max(indentLevel - 1, 0);
-        }
-    
-        const indent = PADDING.repeat(indentLevel);
-        result.push(indent + line);
-    
-        if (isOpeningTag) {
-          indentLevel++;
-        }
-        // other types (self-closing, comments, etc.) do not affect indent level
+    return element;
+  }
+  
+  /**
+   * Check if a string contains HTML markup
+   * @param {string} str - The string to check
+   * @returns {boolean} - Whether the string contains HTML markup
+   * @private
+   */
+  _containsHtmlMarkup(str) {
+    return typeof str === 'string' && /<[a-z][\s\S]*>/i.test(str);
+  }
+  
+  /**
+   * Pretty print an XML string
+   * @param {string} xmlString - The XML string to pretty print
+   * @returns {string} - The pretty printed XML string
+   * @private
+   */
+  _prettyPrintXML(xmlString) {
+    const PADDING = this.xmlIndent;
+  
+    // Normalize spacing between tags and content
+    const tokens = xmlString
+      .replace(/>\s*</g, '><') // collapse inter-tag whitespace
+      .replace(/</g, '\n<')    // newline before each tag
+      .replace(/>/g, '>\n')    // newline after each tag
+      .split('\n')             // split into lines
+      .map(line => line.trim())
+      .filter(line => line.length > 0); // remove empty lines
+  
+    let indentLevel = 0;
+    const result = [];
+  
+    for (let i = 0; i < tokens.length; i++) {
+      const line = tokens[i];
+  
+      const isClosingTag = /^<\/[^>]+>/.test(line);
+      const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
+      const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
+      const isComment = /^<!--.*-->$/.test(line);
+      const isCDATA = /^<!\[CDATA\[.*\]\]>$/.test(line);
+      const isProcessingInstruction = /^<\?.*\?>$/.test(line);
+      const isTextNode = !line.startsWith('<') && !line.endsWith('>');
+  
+      if (isClosingTag) {
+        indentLevel = Math.max(indentLevel - 1, 0);
       }
-    
-      return result.join('\n');
-    }
-
-    
-    /**
-     * Pretty print an XML string
-     * @param {string} xmlString - The XML string to pretty print
-     * @returns {string} - The pretty printed XML string
-     * @private
-     */
-    _prettyPrintXML2(xmlString) {
-      const indent = this.xmlIndent;
-      let formatted = "";
-      let indentLevel = 0;
-      let inTag = false;
-      let inContent = false;
-      let inCDATA = false;
-      let inComment = false;
-      
-      for (let i = 0; i < xmlString.length; i++) {
-        const char = xmlString.charAt(i);
-        const nextChar = xmlString.charAt(i + 1);
-        
-        // Handle CDATA sections
-        if (xmlString.substring(i, i + 9) === "<![CDATA[") {
-          inCDATA = true;
-          formatted += char;
-          continue;
-        }
-        if (inCDATA && xmlString.substring(i, i + 3) === "]]>") {
-          inCDATA = false;
-          formatted += "]]>";
-          i += 2;
-          continue;
-        }
-        if (inCDATA) {
-          formatted += char;
-          continue;
-        }
-        
-        // Handle comments
-        if (xmlString.substring(i, i + 4) === "<!--") {
-          inComment = true;
-          formatted += "<!--";
-          i += 3;
-          continue;
-        }
-        if (inComment && xmlString.substring(i, i + 3) === "-->") {
-          inComment = false;
-          formatted += "-->";
-          i += 2;
-          continue;
-        }
-        if (inComment) {
-          formatted += char;
-          continue;
-        }
-        
-        // Handle tags and content
-        if (char === "<" && !inTag && !inContent) {
-          if (nextChar === "/") {
-            indentLevel--;
-            formatted += "\n" + indent.repeat(indentLevel);
-          } else if (xmlString.substring(i, i + 2) !== "<?") {
-            formatted += "\n" + indent.repeat(indentLevel);
-          }
-          
-          inTag = true;
-          inContent = false;
-          formatted += char;
-        } else if (char === ">" && inTag) {
-          inTag = false;
-          formatted += char;
-          
-          if (xmlString.charAt(i - 1) !== "/") {
-            inContent = true;
-            if (xmlString.substring(i + 1, i + 2) === "<" && xmlString.substring(i + 2, i + 3) !== "/") {
-              indentLevel++;
-            }
-          }
-        } else if (char === "<" && inContent) {
-          inContent = false;
-          inTag = true;
-          
-          if (nextChar === "/") {
-            formatted += char;
-          } else {
-            indentLevel++;
-            formatted += "\n" + indent.repeat(indentLevel) + char;
-          }
-        } else {
-          formatted += char;
-        }
+  
+      const indent = PADDING.repeat(indentLevel);
+      result.push(indent + line);
+  
+      if (isOpeningTag) {
+        indentLevel++;
       }
-      
-      return formatted;
+      // other types (self-closing, comments, etc.) do not affect indent level
     }
-    
-    /**
-     * Validate a JSON object against the schema
-     * @param {Object} jsonObj - The JSON object to validate
-     * @returns {boolean} - Whether the JSON object is valid
-     */
-    // TODO:  is this necessary? maybe provide the jsonschema separately
-    validateJSON(jsonObj) {
-      // Basic validation
-      try {
-        for (const key in jsonObj) {
-          if (key.startsWith('@')) {
-            return false; // Element names shouldn't start with @
-          }
-          
-          const nodeObj = jsonObj[key];
-          const propNames = this.config.propNames;
-          
-          // If compact mode is enabled, we don't need to check for required properties
-          if (!this.config.outputOptions.json.compact) {
-            // Check required properties
-            const requiredProps = [
-              propNames.attributes,
-              propNames.cdata,
-              propNames.comments,
-              propNames.processing,
-              propNames.children
-            ];
-            
-            // Value and namespace are not required in compact mode with removeEmptyStrings
-            if (!this.config.outputOptions.json.removeEmptyStrings) {
-              requiredProps.push(propNames.value);
-              
-              if (this.config.preserveNamespaces) {
-                requiredProps.push(propNames.namespace);
-              }
-            }
-            
-            for (const prop of requiredProps) {
-              if (!(prop in nodeObj)) {
-                return false;
-              }
-            }
-          }
-          
-          // Validate attributes if present
-          if (nodeObj[propNames.attributes]) {
-            if (typeof nodeObj[propNames.attributes] !== 'object') {
-              return false;
-            }
-            
-            for (const attrKey in nodeObj[propNames.attributes]) {
-              const attrObj = nodeObj[propNames.attributes][attrKey];
-              
-              // In compact mode, we don't need to check for required properties
-              if (!this.config.outputOptions.json.compact) {
-                if (!attrObj[propNames.value]) {
-                  return false;
-                }
-                
-                if (this.config.preserveNamespaces && !attrObj[propNames.namespace]) {
-                  return false;
-                }
-              }
-            }
-          }
-          
-          // Validate arrays if present
-          const arrayProps = [
+  
+    return result.join('\n');
+  }
+  
+  /**
+   * Validate a JSON object against the schema
+   * @param {Object} jsonObj - The JSON object to validate
+   * @returns {boolean} - Whether the JSON object is valid
+   */
+  validateJSON(jsonObj) {
+    // Basic validation
+    try {
+      for (const key in jsonObj) {
+        if (key.startsWith('@')) {
+          return false; // Element names shouldn't start with @
+        }
+        
+        const nodeObj = jsonObj[key];
+        const propNames = this.config.propNames;
+        
+        // If compact mode is enabled, we don't need to check for required properties
+        if (!this.config.outputOptions.json.compact) {
+          // Check required properties
+          const requiredProps = [
+            propNames.attributes,
             propNames.cdata,
             propNames.comments,
             propNames.processing,
             propNames.children
           ];
           
-          for (const prop of arrayProps) {
-            if (nodeObj[prop] && !Array.isArray(nodeObj[prop])) {
-              return false;
+          // Value and namespace are not required in compact mode with removeEmptyStrings
+          if (!this.config.outputOptions.json.removeEmptyStrings) {
+            requiredProps.push(propNames.value);
+            
+            if (this.config.preserveNamespaces) {
+              requiredProps.push(propNames.namespace);
             }
           }
           
-          // Validate children recursively
-          if (nodeObj[propNames.children]) {
-            for (const child of nodeObj[propNames.children]) {
-              for (const childKey in child) {
-                if (childKey.startsWith('@')) {
-                  return false;
-                }
-                
-                if (!this.validateJSON({ [childKey]: child[childKey] })) {
-                  return false;
-                }
+          for (const prop of requiredProps) {
+            if (!(prop in nodeObj)) {
+              return false;
+            }
+          }
+        }
+        
+        // Validate attributes if present
+        if (nodeObj[propNames.attributes]) {
+          if (typeof nodeObj[propNames.attributes] !== 'object') {
+            return false;
+          }
+          
+          for (const attrKey in nodeObj[propNames.attributes]) {
+            const attrObj = nodeObj[propNames.attributes][attrKey];
+            
+            // In compact mode, we don't need to check for required properties
+            if (!this.config.outputOptions.json.compact) {
+              if (!attrObj[propNames.value]) {
+                return false;
+              }
+              
+              if (this.config.preserveNamespaces && !attrObj[propNames.namespace]) {
+                return false;
               }
             }
           }
         }
         
-        return true;
-      } catch (error) {
-        return false;
-      }
-    }
-
-    
-    // helper function for traversing the node children in a json object.
-    // provides dot/bracket like notation which automatically flattens the 
-    // last step if applicable and provides fallback values.
-    // if you don't want a flattened result, back uo one node
-    // if you need more expressive searching or filtering, use jsonpath
-    // TODO:  needs unit tests
-    getPath(obj, path, fallback = undefined) {
-      const parts = path.split('.');
-    
-      function traverse(node, keys) {
-        if (keys.length === 0) return node;
-    
-        const [key, ...rest] = keys;
-        const match = key.match(/^([^\[\]]+)(?:\[(\d+)\])?$/);
-        if (!match) return fallback;
-    
-        const [, baseKey, index] = match;
-    
-        const val = node?.[baseKey];
-        if (val !== undefined) {
-          if (Array.isArray(val)) {
-            if (index !== undefined) {
-              return traverse(val[Number(index)], rest);
-            } else {
-              return val.map(child => traverse(child, rest));
+        // Validate arrays if present
+        const arrayProps = [
+          propNames.cdata,
+          propNames.comments,
+          propNames.processing,
+          propNames.children
+        ];
+        
+        for (const prop of arrayProps) {
+          if (nodeObj[prop] && !Array.isArray(nodeObj[prop])) {
+            return false;
+          }
+        }
+        
+        // Validate children recursively
+        if (nodeObj[propNames.children]) {
+          for (const child of nodeObj[propNames.children]) {
+            for (const childKey in child) {
+              if (childKey.startsWith('@')) {
+                return false;
+              }
+              
+              if (!this.validateJSON({ [childKey]: child[childKey] })) {
+                return false;
+              }
             }
-          } else {
-            return traverse(val, rest);
           }
         }
-    
-        // Try searching children if key not directly present
-    if (node && Array.isArray(node[this.config.propNames.children])) {
-          const matches = node[this.config.propNames.children].map(child => child?.[baseKey]).filter(v => v !== undefined);
-    
-          if (index !== undefined) {
-            const item = matches[Number(index)];
-            return item ? traverse(item, rest) : fallback;
-          }
-    
-          return matches.map(child => traverse(child, rest));
-        }
-    
-        return fallback;
       }
-    
-      const result = traverse(obj, parts);
-    
-      // Deep flatten helper
-      const deepFlatten = arr =>
-        Array.isArray(arr)
-          ? arr.flatMap(el => deepFlatten(el))
-          : [arr];
-    
-      if (Array.isArray(result)) {
-        return deepFlatten(result).filter(v => v !== undefined);
-      }
-    
-      return result;
+      
+      return true;
+    } catch (error) {
+      return false;
     }
-    
   }
+
+  
+  // helper function for traversing the node children in a json object.
+  // provides dot/bracket like notation which automatically flattens the 
+  // last step if applicable and provides fallback values.
+  // if you don't want a flattened result, back uo one node
+  // if you need more expressive searching or filtering, use jsonpath
+  getPath(obj, path, fallback = undefined) {
+    const parts = path.split('.');
+  
+    function traverse(node, keys) {
+      if (keys.length === 0) return node;
+  
+      const [key, ...rest] = keys;
+      const match = key.match(/^([^\[\]]+)(?:\[(\d+)\])?$/);
+      if (!match) return fallback;
+  
+      const [, baseKey, index] = match;
+  
+      const val = node?.[baseKey];
+      if (val !== undefined) {
+        if (Array.isArray(val)) {
+          if (index !== undefined) {
+            return traverse(val[Number(index)], rest);
+          } else {
+            return val.map(child => traverse(child, rest));
+          }
+        } else {
+          return traverse(val, rest);
+        }
+      }
+  
+      // Try searching children if key not directly present
+      if (node && Array.isArray(node[this.config.propNames.children])) {
+        const matches = node[this.config.propNames.children].map(child => child?.[baseKey]).filter(v => v !== undefined);
+  
+        if (index !== undefined) {
+          const item = matches[Number(index)];
+          return item ? traverse(item, rest) : fallback;
+        }
+  
+        return matches.map(child => traverse(child, rest));
+      }
+  
+      return fallback;
+    }
+  
+    const result = traverse(obj, parts);
+  
+    // Deep flatten helper
+    const deepFlatten = arr =>
+      Array.isArray(arr)
+        ? arr.flatMap(el => deepFlatten(el))
+        : [arr];
+  
+    if (Array.isArray(result)) {
+      return deepFlatten(result).filter(v => v !== undefined);
+    }
+  
+    return result;
+  }
+}
