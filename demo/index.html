@@ -162,52 +162,6 @@
       margin: 15px 0;
       border-radius: 0 4px 4px 0;
     }
-    .expression-toggle {
-      margin: 15px 0;
-    }
-    .expression-panel {
-      margin-top: 10px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background-color: #fff;
-      transition: all 0.3s ease-in-out;
-    }
-    .expression-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-    .expression-section {
-      display: flex;
-      flex-direction: column;
-    }
-    .expression-section h4 {
-      margin-top: 0;
-      margin-bottom: 10px;
-      color: #2c3e50;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 5px;
-    }
-    .expression-input-group {
-      display: flex;
-      margin-bottom: 10px;
-    }
-    .expression-input-group input {
-      flex-grow: 1;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px 0 0 4px;
-    }
-    .expression-input-group button {
-      border-radius: 0 4px 4px 0;
-      margin-right: 0;
-    }
-    .expression-section textarea {
-      height: 150px;
-      font-family: monospace;
-      background-color: #f5f5f5;
-    }
   </style>
 </head>
 <body>
@@ -367,167 +321,13 @@
           <textarea id="json-output"></textarea>
         </div>
       </div>
-      
-      <div class="expression-toggle">
-        <button id="toggle-expression">Show Expression Evaluator</button>
-      </div>
-      
-      <div class="expression-panel" style="display: none;">
-        <h3>Expression Evaluator</h3>
-        
-        <div class="expression-layout">
-          <div class="expression-section">
-            <h4>XPath Expression</h4>
-            <div class="expression-input-group">
-              <input type="text" id="xpath-input" placeholder="Enter XPath expression (e.g., //book:title)">
-              <button id="evaluate-xpath">Evaluate</button>
-            </div>
-            <textarea id="xpath-result" readonly placeholder="XPath evaluation results will appear here"></textarea>
-          </div>
-          
-          <div class="expression-section">
-            <h4>JSONPath Expression</h4>
-            <div class="expression-input-group">
-              <input type="text" id="jsonpath-input" placeholder="Enter JSONPath expression (e.g., $.library.book)">
-              <button id="evaluate-jsonpath">Evaluate</button>
-            </div>
-            <textarea id="jsonpath-result" readonly placeholder="JSONPath evaluation results will appear here"></textarea>
-          </div>
-        </div>
-      </div>
     </div>
+    
+
   </div>
 
   <!-- Include the XMLJSONTransformer library -->
   <script src="../dist/xml-json-transformer.js"></script>
-  
-  <!-- Create a fallback implementation in case the library doesn't load -->
-  <script>
-    // Check if XMLJSONTransformer is defined, if not provide a minimal fallback
-    if (typeof XMLJSONTransformer !== 'function') {
-      console.warn('XMLJSONTransformer not found - using fallback implementation for demo purposes');
-      
-      // Minimal implementation for demo purposes
-      window.XMLJSONTransformer = class XMLJSONTransformer {
-        constructor(config = {}) {
-          this.config = {
-            preserveNamespaces: true,
-            preserveComments: true,
-            preservePIs: true,
-            preserveCDATA: true,
-            preserveTextNodes: true,
-            preserveWhitespace: false,
-            stripPrefixes: false,
-            outputOptions: {
-              prettyPrint: true,
-              indent: 2,
-              json: {
-                compact: false,
-                removeEmptyStrings: false
-              }
-            },
-            propNames: {
-              namespace: "@ns",
-              value: "@val",
-              attributes: "@attrs",
-              cdata: "@cdata",
-              comments: "@comments",
-              processing: "@processing",
-              children: "@children"
-            },
-            ...config
-          };
-        }
-        
-        xmlToJSON(xmlString) {
-          // Very simple implementation for demo purposes
-          try {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-            
-            if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-              throw new Error('XML parsing error');
-            }
-            
-            // Simplified conversion just for demo
-            return this._processNode(xmlDoc.documentElement);
-          } catch (error) {
-            console.error('XML to JSON conversion error:', error);
-            throw error;
-          }
-        }
-        
-        _processNode(node) {
-          const result = {};
-          const nodeObj = {};
-          
-          // Basic node properties
-          nodeObj[this.config.propNames.namespace] = node.namespaceURI || '';
-          nodeObj[this.config.propNames.value] = node.textContent || '';
-          nodeObj[this.config.propNames.attributes] = {};
-          nodeObj[this.config.propNames.children] = [];
-          
-          // Process attributes
-          if (node.attributes) {
-            for (let i = 0; i < node.attributes.length; i++) {
-              const attr = node.attributes[i];
-              nodeObj[this.config.propNames.attributes][attr.name] = {
-                [this.config.propNames.value]: attr.value,
-                [this.config.propNames.namespace]: attr.namespaceURI || ''
-              };
-            }
-          }
-          
-          // Process child elements
-          if (node.childNodes) {
-            for (let i = 0; i < node.childNodes.length; i++) {
-              const childNode = node.childNodes[i];
-              if (childNode.nodeType === Node.ELEMENT_NODE) {
-                const childResult = this._processNode(childNode);
-                nodeObj[this.config.propNames.children].push(childResult);
-              }
-            }
-          }
-          
-          result[node.nodeName] = nodeObj;
-          return result;
-        }
-        
-        jsonToXML(jsonObj) {
-          // Very simple implementation for demo purposes
-          try {
-            const rootElName = Object.keys(jsonObj)[0];
-            if (!rootElName) {
-              throw new Error("Invalid JSON: No root element found");
-            }
-            
-            const doc = document.implementation.createDocument(null, rootElName, null);
-            const rootNode = doc.documentElement;
-            
-            // Set root element text content if available
-            const nodeData = jsonObj[rootElName];
-            if (nodeData[this.config.propNames.value]) {
-              rootNode.textContent = nodeData[this.config.propNames.value];
-            }
-            
-            // Process attributes
-            if (nodeData[this.config.propNames.attributes]) {
-              for (const [attrName, attrData] of Object.entries(nodeData[this.config.propNames.attributes])) {
-                rootNode.setAttribute(attrName, attrData[this.config.propNames.value] || '');
-              }
-            }
-            
-            // Serialize the XML document
-            const serializer = new XMLSerializer();
-            return serializer.serializeToString(doc);
-          } catch (error) {
-            console.error('JSON to XML conversion error:', error);
-            throw error;
-          }
-        }
-      };
-    }
-  </script>
   
   <script>
     // Sample definitions
@@ -663,80 +463,37 @@
 
     // Initialize the demo
     document.addEventListener('DOMContentLoaded', () => {
-      // Check if all required elements exist
-      const elements = {
-        xmlInput: document.getElementById('xml-input'),
-        jsonOutput: document.getElementById('json-output'),
-        sampleSelector: document.getElementById('sample-selector'),
-        xmlToJsonButton: document.getElementById('xml-to-json'),
-        jsonToXmlButton: document.getElementById('json-to-xml'),
-        resetButton: document.getElementById('reset'),
-        configToggleButton: document.getElementById('toggle-config'),
-        configPanel: document.querySelector('.config-panel'),
-        expressionToggleButton: document.getElementById('toggle-expression'),
-        expressionPanel: document.querySelector('.expression-panel'),
-        currentConfigDisplay: document.getElementById('current-config'),
-        evaluateXPathButton: document.getElementById('evaluate-xpath'),
-        evaluateJSONPathButton: document.getElementById('evaluate-jsonpath'),
-        xpathInput: document.getElementById('xpath-input'),
-        xpathResult: document.getElementById('xpath-result'),
-        jsonpathInput: document.getElementById('jsonpath-input'),
-        jsonpathResult: document.getElementById('jsonpath-result')
-      };
-      
-      // Check if any elements are missing
-      const missingElements = Object.entries(elements)
-        .filter(([name, element]) => !element)
-        .map(([name]) => name);
-      
-      if (missingElements.length > 0) {
-        console.error(`Missing elements: ${missingElements.join(', ')}`);
-        alert(`Error: Some page elements were not found. Please check the console for details.`);
-        return;
-      }
-      
-      // Try loading the XMLJSONTransformer library
-      if (typeof XMLJSONTransformer !== 'function') {
-        console.error('XMLJSONTransformer library not loaded');
-        alert('Error: XMLJSONTransformer library not found. Check that the script is properly loaded.');
-        return;
-      }
-      
       // Set default sample
-      elements.xmlInput.value = samples.library.xml;
+      document.getElementById('xml-input').value = samples.library.xml;
       updateCurrentConfig();
       
       // Configuration toggle
-      elements.configToggleButton.addEventListener('click', () => {
-        const isVisible = elements.configPanel.style.display !== 'none';
-        elements.configPanel.style.display = isVisible ? 'none' : 'block';
-        elements.configToggleButton.textContent = isVisible ? 'Show Configuration Options' : 'Hide Configuration Options';
-      });
+      const configToggleBtn = document.getElementById('toggle-config');
+      const configPanel = document.querySelector('.config-panel');
       
-      // Expression Evaluator toggle
-      elements.expressionToggleButton.addEventListener('click', () => {
-        const isVisible = elements.expressionPanel.style.display !== 'none';
-        elements.expressionPanel.style.display = isVisible ? 'none' : 'block';
-        elements.expressionToggleButton.textContent = isVisible ? 'Show Expression Evaluator' : 'Hide Expression Evaluator';
+      configToggleBtn.addEventListener('click', () => {
+        const isVisible = configPanel.style.display !== 'none';
+        configPanel.style.display = isVisible ? 'none' : 'block';
+        configToggleBtn.textContent = isVisible ? 'Show Configuration Options' : 'Hide Configuration Options';
       });
       
       // Sample selector event listener
-      elements.sampleSelector.addEventListener('change', (event) => {
+      document.getElementById('sample-selector').addEventListener('change', (event) => {
         const selectedSample = event.target.value;
         if (selectedSample && samples[selectedSample]) {
-          elements.xmlInput.value = samples[selectedSample].xml;
-          elements.jsonOutput.value = '';
+          document.getElementById('xml-input').value = samples[selectedSample].xml;
+          document.getElementById('json-output').value = '';
         }
       });
       
       // XML to JSON conversion
-      elements.xmlToJsonButton.addEventListener('click', () => {
+      document.getElementById('xml-to-json').addEventListener('click', () => {
         try {
           const config = getConfig();
           const transformer = new XMLJSONTransformer(config);
-          const xmlInput = elements.xmlInput.value;
+          const xmlInput = document.getElementById('xml-input').value;
           const jsonOutput = transformer.xmlToJSON(xmlInput);
-          elements.jsonOutput.value = JSON.stringify(jsonOutput, null, 2);
+          document.getElementById('json-output').value = JSON.stringify(jsonOutput, null, 2);
           updateCurrentConfig(config);
         } catch (error) {
           showError('Error converting XML to JSON: ' + error.message);
@@ -744,14 +501,14 @@
       });
       
       // JSON to XML conversion
-      elements.jsonToXmlButton.addEventListener('click', () => {
+      document.getElementById('json-to-xml').addEventListener('click', () => {
         try {
           const config = getConfig();
           const transformer = new XMLJSONTransformer(config);
-          const jsonInput = elements.jsonOutput.value;
+          const jsonInput = document.getElementById('json-output').value;
           const jsonObj = JSON.parse(jsonInput);
           const xmlOutput = transformer.jsonToXML(jsonObj);
-          elements.xmlInput.value = xmlOutput;
+          document.getElementById('xml-input').value = xmlOutput;
           updateCurrentConfig(config);
         } catch (error) {
           showError('Error converting JSON to XML: ' + error.message);
@@ -759,16 +516,16 @@
       });
       
       // Reset
-      elements.resetButton.addEventListener('click', () => {
-        const selectElement = elements.sampleSelector;
+      document.getElementById('reset').addEventListener('click', () => {
+        const selectElement = document.getElementById('sample-selector');
         const selectedSample = selectElement.value;
         if (selectedSample && samples[selectedSample]) {
-          elements.xmlInput.value = samples[selectedSample].xml;
+          document.getElementById('xml-input').value = samples[selectedSample].xml;
         } else {
-          elements.xmlInput.value = samples.library.xml;
+          document.getElementById('xml-input').value = samples.library.xml;
           selectElement.value = 'library';
         }
-        elements.jsonOutput.value = '';
+        document.getElementById('json-output').value = '';
       });
       
       // Configuration checkboxes and inputs - update current config on change
@@ -776,97 +533,6 @@
         input.addEventListener('change', () => {
           updateCurrentConfig(getConfig());
         });
-      });
-      
-      // XPath evaluator
-      elements.evaluateXPathButton.addEventListener('click', () => {
-        try {
-          const xmlString = elements.xmlInput.value;
-          const xpathExpression = elements.xpathInput.value;
-          
-          if (!xmlString.trim()) {
-            throw new Error('No XML content to evaluate');
-          }
-          
-          if (!xpathExpression.trim()) {
-            throw new Error('Please enter an XPath expression');
-          }
-          
-          // Parse the XML
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-          
-          // Handle parser errors
-          if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
-            throw new Error('XML parsing error');
-          }
-          
-          // Create a namespace resolver for the document
-          const nsResolver = xmlDoc.createNSResolver(xmlDoc.documentElement);
-          
-          // Evaluate the XPath expression
-          const result = xmlDoc.evaluate(xpathExpression, xmlDoc, nsResolver, XPathResult.ANY_TYPE, null);
-          
-          // Process the results based on type
-          let output = '';
-          switch (result.resultType) {
-            case XPathResult.NUMBER_TYPE:
-              output = 'Number result: ' + result.numberValue;
-              break;
-            case XPathResult.STRING_TYPE:
-              output = 'String result: ' + result.stringValue;
-              break;
-            case XPathResult.BOOLEAN_TYPE:
-              output = 'Boolean result: ' + result.booleanValue;
-              break;
-            case XPathResult.UNORDERED_NODE_ITERATOR_TYPE:
-            case XPathResult.ORDERED_NODE_ITERATOR_TYPE:
-              let node;
-              let count = 0;
-              while ((node = result.iterateNext())) {
-                count++;
-                output += `Node ${count}: ${nodeToString(node)}\n\n`;
-              }
-              if (count === 0) {
-                output = 'No nodes matched the expression';
-              }
-              break;
-            default:
-              output = 'Unknown result type';
-          }
-          
-          // Display the results
-          document.getElementById('xpath-result').value = output;
-        } catch (error) {
-          document.getElementById('xpath-result').value = 'Error: ' + error.message;
-        }
-      });
-      
-      // JSONPath evaluator
-      elements.evaluateJSONPathButton.addEventListener('click', () => {
-        try {
-          const jsonString = elements.jsonOutput.value;
-          const jsonpathExpression = elements.jsonpathInput.value;
-          
-          if (!jsonString.trim()) {
-            throw new Error('No JSON content to evaluate. Convert XML to JSON first.');
-          }
-          
-          if (!jsonpathExpression.trim()) {
-            throw new Error('Please enter a JSONPath expression');
-          }
-          
-          // Parse the JSON
-          const jsonObj = JSON.parse(jsonString);
-          
-          // Simple JSONPath evaluator implementation
-          const result = evaluateJsonPath(jsonObj, jsonpathExpression);
-          
-          // Display the results
-          elements.jsonpathResult.value = JSON.stringify(result, null, 2);
-        } catch (error) {
-          elements.jsonpathResult.value = 'Error: ' + error.message;
-        }
       });
       
       // Helper function to get configuration from UI
@@ -910,18 +576,11 @@
       
       // Helper function to update current config display
       function updateCurrentConfig(config) {
-        if (!elements.currentConfigDisplay) return;
-        
+        const configElement = document.getElementById('current-config');
         if (!config) {
-          try {
-            config = new XMLJSONTransformer().config;
-          } catch (error) {
-            console.error('Error creating default config:', error);
-            elements.currentConfigDisplay.textContent = 'Error loading configuration';
-            return;
-          }
+          config = new XMLJSONTransformer().config;
         }
-        elements.currentConfigDisplay.textContent = JSON.stringify(config, null, 2);
+        configElement.textContent = JSON.stringify(config, null, 2);
       }
       
       // Helper function to show errors
@@ -936,210 +595,72 @@
           errorDiv.remove();
         }, 5000);
       }
-      
-      // Utility function to convert a DOM node to string representation
-      function nodeToString(node) {
-        const serializer = new XMLSerializer();
-        let str = '';
-        
-        switch (node.nodeType) {
-          case Node.ELEMENT_NODE:
-            str = serializer.serializeToString(node);
-            break;
-          case Node.TEXT_NODE:
-            str = 'Text: ' + node.textContent;
-            break;
-          case Node.ATTRIBUTE_NODE:
-            str = 'Attribute: ' + node.name + '="' + node.value + '"';
-            break;
-          default:
-            str = 'Node type: ' + node.nodeType;
-        }
-        
-        return str;
-      }
-      
-      // Simple JSONPath evaluator
-      function evaluateJsonPath(obj, path) {
-        // Basic implementation of JSONPath
-        // This is a simplified version and doesn't support all JSONPath features
-        
-        // Handle basic JSONPath syntax
-        if (path === ') {
-          return obj;
-        }
-        
-        // Remove leading $ if present
-        if (path.startsWith(')) {
-          path = path.substring(1);
-        }
-        
-        // Handle the case of empty path after removing $
-        if (!path) {
-          return obj;
-        }
-        
-        // Handle simple dot notation first segment ($.store or $['store'])
-        if (path.startsWith('.') || path.startsWith('[')) {
-          try {
-            // Support for basic segments like .store, ['store'], [0]
-            const segments = parseJsonPathSegments(path);
-            
-            // Follow the path segments
-            let current = obj;
-            for (const segment of segments) {
-              if (current === undefined || current === null) {
-                return null;
-              }
-              
-              // Handle wildcards and recursive descent
-              if (segment === '*') {
-                // Return all values in an array or object
-                if (Array.isArray(current)) {
-                  return current;
-                } else if (typeof current === 'object') {
-                  return Object.values(current);
-                }
-                return null;
-              } else if (segment === '..') {
-                // Deep scanning (recursive descent)
-                // Not fully implemented in this simple version
-                return 'Deep scanning is not fully implemented in this demo';
-              } else {
-                // Regular property or index access
-                current = current[segment];
-              }
-            }
-            
-            return current;
-          } catch (error) {
-            return `Error parsing path: ${error.message}`;
-          }
-        }
-        
-        return `Unsupported JSONPath syntax: ${path}`;
-      }
-      
-      // Helper function to parse JSONPath segments
-      function parseJsonPathSegments(path) {
-        const segments = [];
-        let currentSegment = '';
-        let inBracket = false;
-        let inQuote = false;
-        let quoteChar = '';
-        
-        for (let i = 0; i < path.length; i++) {
-          const char = path[i];
-          
-          if (char === '[' && !inQuote) {
-            inBracket = true;
-            if (currentSegment) {
-              segments.push(currentSegment);
-              currentSegment = '';
-            }
-          } 
-          else if (char === ']' && !inQuote) {
-            inBracket = false;
-            if (currentSegment) {
-              // Check if it's a numeric index
-              if (/^\d+$/.test(currentSegment)) {
-                segments.push(parseInt(currentSegment, 10));
-              } else {
-                // Remove quotes if present
-                if ((currentSegment.startsWith("'") && currentSegment.endsWith("'")) || 
-                    (currentSegment.startsWith('"') && currentSegment.endsWith('"'))) {
-                  currentSegment = currentSegment.substring(1, currentSegment.length - 1);
-                }
-                segments.push(currentSegment);
-              }
-              currentSegment = '';
-            }
-          } 
-          else if ((char === "'" || char === '"') && inBracket) {
-            if (!inQuote) {
-              inQuote = true;
-              quoteChar = char;
-            } else if (char === quoteChar) {
-              inQuote = false;
-            } else {
-              currentSegment += char;
-            }
-          } 
-          else if (char === '.' && !inBracket && !inQuote) {
-            if (currentSegment) {
-              segments.push(currentSegment);
-              currentSegment = '';
-            }
-          } 
-          else {
-            // Skip the dot in dot notation at the beginning
-            if (!(char === '.' && i === 0)) {
-              currentSegment += char;
-            }
-          }
-        }
-        
-        // Add the last segment if any
-        if (currentSegment) {
-          segments.push(currentSegment);
-        }
-        
-        return segments;
-      }
-      
-      // Function to attempt loading external samples
-      async function loadExternalSamples() {
-        try {
-          const response = await fetch('samples/index.json');
-          if (!response.ok) {
-            console.log('No external samples found');
-            return;
-          }
-          
-          const sampleIndex = await response.json();
-          const selector = document.getElementById('sample-selector');
-          
-          // Add external samples
-          if (sampleIndex.samples && Array.isArray(sampleIndex.samples)) {
-            for (const sample of sampleIndex.samples) {
-              if (sample.id && sample.name) {
-                const option = document.createElement('option');
-                option.value = `external:${sample.id}`;
-                option.textContent = sample.name;
-                selector.appendChild(option);
-              }
-            }
-            
-            // Add handler for external samples
-            selector.addEventListener('change', async (event) => {
-              const selectedValue = event.target.value;
-              
-              if (selectedValue && selectedValue.startsWith('external:')) {
-                const sampleId = selectedValue.split(':')[1];
-                try {
-                  const sampleResponse = await fetch(`samples/${sampleId}.xml`);
-                  if (!sampleResponse.ok) {
-                    throw new Error(`Failed to load sample ${sampleId}`);
-                  }
-                  
-                  const sampleXml = await sampleResponse.text();
-                  document.getElementById('xml-input').value = sampleXml;
-                  document.getElementById('json-output').value = '';
-                } catch (error) {
-                  showError(`Error loading external sample: ${error.message}`);
-                }
-              }
-            });
-          }
-        } catch (error) {
-          console.log('Error loading external samples:', error);
-          // Silently fail - user can still use built-in samples
-        }
-      }
-      
-      // Try to load external samples
-      loadExternalSamples();
     });
+    
+    // Function to load samples from external files
+    async function loadExternalSamples() {
+      try {
+        const response = await fetch('samples/index.json');
+        if (!response.ok) {
+          throw new Error('Failed to load samples index');
+        }
+        
+        const sampleIndex = await response.json();
+        const selector = document.getElementById('sample-selector');
+        
+        // Clear existing options except the default ones
+        const defaultOptions = Array.from(selector.options).slice(0, 7); // Keep the first 7 options
+        selector.innerHTML = '';
+        defaultOptions.forEach(option => selector.appendChild(option));
+        
+        // Add external samples
+        for (const sample of sampleIndex.samples) {
+          const option = document.createElement('option');
+          option.value = `external:${sample.id}`;
+          option.textContent = sample.name;
+          selector.appendChild(option);
+        }
+        
+        // Update selection handler
+        selector.removeEventListener('change', selectorChangeHandler);
+        selector.addEventListener('change', selectorChangeHandler);
+      } catch (error) {
+        console.error('Error loading external samples:', error);
+        // Silently fail - user can still use built-in samples
+      }
+    }
+    
+    // Sample selector change handler (defined separately for removeEventListener)
+    async function selectorChangeHandler(event) {
+      const selectedValue = event.target.value;
+      
+      // Handle built-in samples
+      if (selectedValue && !selectedValue.startsWith('external:') && samples[selectedValue]) {
+        document.getElementById('xml-input').value = samples[selectedValue].xml;
+        document.getElementById('json-output').value = '';
+        return;
+      }
+      
+      // Handle external samples
+      if (selectedValue && selectedValue.startsWith('external:')) {
+        const sampleId = selectedValue.split(':')[1];
+        try {
+          const sampleResponse = await fetch(`samples/${sampleId}.xml`);
+          if (!sampleResponse.ok) {
+            throw new Error(`Failed to load sample ${sampleId}`);
+          }
+          
+          const sampleXml = await sampleResponse.text();
+          document.getElementById('xml-input').value = sampleXml;
+          document.getElementById('json-output').value = '';
+        } catch (error) {
+          showError(`Error loading external sample: ${error.message}`);
+        }
+      }
+    }
+    
+    // Try to load external samples
+    loadExternalSamples().catch(error => console.error('Error in loadExternalSamples:', error));
   </script>
 </body>
 </html>

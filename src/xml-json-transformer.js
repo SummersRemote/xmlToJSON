@@ -677,6 +677,7 @@ export class XMLJSONTransformer {
      * @param {Object} jsonObj - The JSON object to validate
      * @returns {boolean} - Whether the JSON object is valid
      */
+    // TODO:  is this necessary? maybe provide the jsonschema separately
     validateJSON(jsonObj) {
       // Basic validation
       try {
@@ -772,102 +773,67 @@ export class XMLJSONTransformer {
         return false;
       }
     }
+
     
-  //   /**
-  //    * Create a sample XML string for testing
-  //    * @returns {string} - A sample XML string
-  //    */
-  //   static createSampleXML() {
-  //     return `<?xml version="1.0" encoding="UTF-8"?>
-  // <root xmlns="http://example.com/ns1" xmlns:ex="http://example.com/ns2">
-  //   <!-- This is a comment -->
-  //   <ex:child id="1" class="item">
-  //     <![CDATA[This is a CDATA section]]>
-  //     Some text content
-  //     <grandchild>More content</grandchild>
-  //   </ex:child>
-  //   <?xml-stylesheet type="text/css" href="style.css"?>
-  //   <empty />
-  // </root>`;
-  //   }
+    // helper function for traversing the node children in a json object.
+    // provides dot/bracket like notation which automatically flattens the 
+    // last step if applicable and provides fallback values.
+    // if you don't want a flattened result, back uo one node
+    // if you need more expressive searching or filtering, use jsonpath
+    // TODO:  needs unit tests
+    getPath(obj, path, fallback = undefined) {
+      const parts = path.split('.');
     
-  //   /**
-  //    * Create a sample JSON object for testing
-  //    * @returns {Object} - A sample JSON object
-  //    */
-  //   static createSampleJSON() {
-  //     return {
-  //       "root": {
-  //         "@ns": "http://example.com/ns1",
-  //         "@val": "",
-  //         "@attrs": {
-  //           "xmlns": {
-  //             "@val": "http://example.com/ns1",
-  //             "@ns": ""
-  //           },
-  //           "xmlns:ex": {
-  //             "@val": "http://example.com/ns2",
-  //             "@ns": ""
-  //           }
-  //         },
-  //         "@cdata": [],
-  //         "@comments": ["This is a comment"],
-  //         "@processing": [],
-  //         "@children": [
-  //           {
-  //             "ex:child": {
-  //               "@ns": "http://example.com/ns2",
-  //               "@val": "Some text content",
-  //               "@attrs": {
-  //                 "id": {
-  //                   "@val": "1",
-  //                   "@ns": ""
-  //                 },
-  //                 "class": {
-  //                   "@val": "item",
-  //                   "@ns": ""
-  //                 }
-  //               },
-  //               "@cdata": ["This is a CDATA section"],
-  //               "@comments": [],
-  //               "@processing": [],
-  //               "@children": [
-  //                 {
-  //                   "grandchild": {
-  //                     "@ns": "",
-  //                     "@val": "More content",
-  //                     "@attrs": {},
-  //                     "@cdata": [],
-  //                     "@comments": [],
-  //                     "@processing": [],
-  //                     "@children": []
-  //                   }
-  //                 }
-  //               ]
-  //             }
-  //           },
-  //           {
-  //             "empty": {
-  //               "@ns": "",
-  //               "@val": "",
-  //               "@attrs": {},
-  //               "@cdata": [],
-  //               "@comments": [],
-  //               "@processing": [],
-  //               "@children": []
-  //             }
-  //           }
-  //         ]
-  //       }
-  //     };
-  //   }
+      function traverse(node, keys) {
+        if (keys.length === 0) return node;
+    
+        const [key, ...rest] = keys;
+        const match = key.match(/^([^\[\]]+)(?:\[(\d+)\])?$/);
+        if (!match) return fallback;
+    
+        const [, baseKey, index] = match;
+    
+        const val = node?.[baseKey];
+        if (val !== undefined) {
+          if (Array.isArray(val)) {
+            if (index !== undefined) {
+              return traverse(val[Number(index)], rest);
+            } else {
+              return val.map(child => traverse(child, rest));
+            }
+          } else {
+            return traverse(val, rest);
+          }
+        }
+    
+        // Try searching children if key not directly present
+    if (node && Array.isArray(node[this.config.propNames.children])) {
+          const matches = node[this.config.propNames.children].map(child => child?.[baseKey]).filter(v => v !== undefined);
+    
+          if (index !== undefined) {
+            const item = matches[Number(index)];
+            return item ? traverse(item, rest) : fallback;
+          }
+    
+          return matches.map(child => traverse(child, rest));
+        }
+    
+        return fallback;
+      }
+    
+      const result = traverse(obj, parts);
+    
+      // Deep flatten helper
+      const deepFlatten = arr =>
+        Array.isArray(arr)
+          ? arr.flatMap(el => deepFlatten(el))
+          : [arr];
+    
+      if (Array.isArray(result)) {
+        return deepFlatten(result).filter(v => v !== undefined);
+      }
+    
+      return result;
+    }
+    
   }
-  
-// // Export for both environments
-// if (typeof module !== 'undefined' && module.exports) {
-//   // Node.js / Jest / CommonJS
-//   module.exports = XMLJSONTransformer;
-// } else if (typeof window !== 'undefined') {
-//   // Browser
-//   window.XMLJSONTransformer = XMLJSONTransformer;
-// }
