@@ -1,5 +1,4 @@
 # xmlToJSON 2.0
-==============
 
 A JavaScript utility class for transforming from XML to JSON **and back again!**
 
@@ -10,6 +9,8 @@ Features
 - **Special Node Types**: Support for CDATA sections, comments, and processing instructions
 - **Mixed Content**: Simplified handling of elements with mixed content
 - **Configurable**: Extensive customization options
+
+![Build Status](https://github.com/summersremote/xmlToJSON/actions/workflows/ci.yml/badge.svg)
 
 ## Installation
 

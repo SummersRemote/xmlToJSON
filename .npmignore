@@ -1,0 +1,46 @@
+# Source files (only dist is needed)
+src/
+test/
+examples/
+demo/
+
+# Config files
+.github/
+.vscode/
+.eslintrc.js
+.eslintignore
+.prettierrc
+.prettierignore
+.babelrc
+jest.config.js
+rollup.config.js
+tsconfig.json
+jsdoc.json
+playwright.config.js
+
+# Documentation source files
+docs/
+*.md
+!README.md
+!LICENSE
+!CHANGELOG.md
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+.circleci/
+.github/workflows/
+
+# Development files
+*.log
+.DS_Store
+coverage/
+.nyc_output/
+__snapshots__/
+*.tgz
+*.gz
+.git
+.gitignore
+.editorconfig
+*.yml
+*.yaml
