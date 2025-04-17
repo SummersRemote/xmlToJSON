@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XMLJSONTransformer Browser Example</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .example-section {
+      margin-bottom: 30px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #3498db;
+      margin-top: 0;
+    }
+    textarea {
+      width: 100%;
+      height: 200px;
+      margin-bottom: 10px;
+      font-family: monospace;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .controls {
+      margin-bottom: 15px;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .config-panel {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #fff;
+    }
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      margin-right: 15px;
+    }
+    .checkbox-item label {
+      margin-left: 5px;
+    }
+    .input-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .input-item {
+      display: flex;
+      flex-direction: column;
+      margin-right: 15px;
+      min-width: 150px;
+    }
+    .input-item label {
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+    .input-item input {
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    .radio-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .radio-item {
+      display: flex;
+      align-items: center;
+    }
+    .radio-item label {
+      margin-left: 5px;
+    }
+    .tab-container {
+      margin-bottom: 20px;
+    }
+    .tab-buttons {
+      display: flex;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-button {
+      padding: 10px 20px;
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+    .tab-button.active {
+      background-color: #fff;
+      border-bottom: 1px solid #fff;
+      position: relative;
+      bottom: -1px;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>XMLJSONTransformer Browser Example</h1>
+    
+    <div class="tab-container">
+      <div class="tab-buttons">
+        <div class="tab-button active" data-tab="basic-tab">Basic Conversion</div>
+        <div class="tab-button" data-tab="custom-tab">Custom Configuration</div>
+        <div class="tab-button" data-tab="namespace-tab">Namespace Handling</div>
+        <div class="tab-button" data-tab="remote-tab">Remote XML</div>
+      </div>
+      
+      <!-- Basic Conversion Tab -->
+      <div id="basic-tab" class="tab-content active">
+        <h2>Basic XML ⟷ JSON Conversion</h2>
+        <div class="controls">
+          <button id="xml-to-json">XML to JSON</button>
+          <button id="json-to-xml">JSON to XML</button>
+          <button id="reset-example">Reset Example</button>
+        </div>
+        <div>
+          <h3>XML</h3>
+          <textarea id="xml-input"></textarea>
+        </div>
+        <div>
+          <h3>JSON</h3>
+          <textarea id="json-output"></textarea>
+        </div>
+      </div>
+      
+      <!-- Custom Configuration Tab -->
+      <div id="custom-tab" class="tab-content">
+        <h2>Customized Conversion</h2>
+        <div class="controls">
+          <button id="custom-xml-to-json">XML to JSON</button>
+          <button id="custom-json-to-xml">JSON to XML</button>
+        </div>
+        
+        <div class="config-panel">
+          <h3>Configuration</h3>
+          <div class="checkbox-group">
+            <div class="checkbox-item">
+              <input type="checkbox" id="enable-namespaces" checked>
+              <label for="enable-namespaces">Enable Namespaces</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="enable-attributes" checked>
+              <label for="enable-attributes">Enable Attributes</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="enable-text-nodes" checked>
+              <label for="enable-text-nodes">Enable Text Nodes</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="enable-cdata" checked>
+              <label for="enable-cdata">Enable CDATA</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="enable-comments" checked>
+              <label for="enable-comments">Enable Comments</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="enable-pi" checked>
+              <label for="enable-pi">Enable Processing Instructions</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="skip-empty-text" checked>
+              <label for="skip-empty-text">Skip Empty Text</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="pretty-print" checked>
+              <label for="pretty-print">Pretty Print XML</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="xml-declaration" checked>
+              <label for="xml-declaration">XML Declaration</label>
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <div class="input-item">
+              <label for="attributes-key">Attributes Key</label>
+              <input type="text" id="attributes-key" value="@attributes">
+            </div>
+            <div class="input-item">
+              <label for="namespaces-key">Namespaces Key</label>
+              <input type="text" id="namespaces-key" value="@namespaces">
+            </div>
+            <div class="input-item">
+              <label for="text-key">Text Key</label>
+              <input type="text" id="text-key" value="_text">
+            </div>
+            <div class="input-item">
+              <label for="cdata-key">CDATA Key</label>
+              <input type="text" id="cdata-key" value="_cdata">
+            </div>
+            <div class="input-item">
+              <label for="comment-key">Comment Key</label>
+              <input type="text" id="comment-key" value="_comment">
+            </div>
+            <div class="input-item">
+              <label for="pi-key">Processing Instruction Key</label>
+              <input type="text" id="pi-key" value="_pi">
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <h3>XML</h3>
+          <textarea id="custom-xml-input"></textarea>
+        </div>
+        <div>
+          <h3>JSON</h3>
+          <textarea id="custom-json-output"></textarea>
+        </div>
+      </div>
+      
+      <!-- Namespace Handling Tab -->
+      <div id="namespace-tab" class="tab-content">
+        <h2>Namespace Handling</h2>
+        <div class="controls">
+          <button id="ns-xml-to-json">XML to JSON</button>
+          <button id="ns-json-to-xml">JSON to XML</button>
+          <button id="ns-reset">Reset Example</button>
+        </div>
+        
+        <div class="config-panel">
+          <div class="input-item">
+            <label for="namespace-attribute">Namespace Attribute Name:</label>
+            <input type="text" id="namespace-attribute" value="ns">
+          </div>
+        </div>
+        
+        <div>
+          <h3>XML</h3>
+          <textarea id="ns-xml-input"></textarea>
+        </div>
+        <div>
+          <h3>JSON</h3>
+          <textarea id="ns-json-output"></textarea>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- Include the XMLJSONTransformer library -->
+  <script src="../dist/xml-json-transformer.js"></script>
+  
+  <script>
+    // Default XML examples
+    const defaultXml = `<?xml version="1.0" encoding="UTF-8"?>
+<library xmlns:book="http://example.org/book">
+  <!-- This is a library catalog -->
+  <book:book id="123" available="true">
+    <book:title>JavaScript: The Good Parts</book:title>
+    <book:author>Douglas Crockford</book:author>
+    <book:year>2008</book:year>
+    <book:genre>Programming</book:genre>
+    <book:description><![CDATA[This book provides a developer's view of the language, from optional semicolons to prototypes.]]></book:description>
+  </book:book>
+  <book:book id="456" available="false">
+    <book:title>Clean Code</book:title>
+    <book:author>Robert C. Martin</book:author>
+    <book:year>2008</book:year>
+    <book:genre>Programming</book:genre>
+    <book:description><![CDATA[A handbook of agile software craftsmanship.]]></book:description>
+  </book:book>
+  <?xml-stylesheet type="text/css" href="style.css"?>
+</library>`;
+
+    // SOAP Example with namespaces
+    const soapXml = `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope 
+    xmlns:soap="http://www.w3.org/2003/05/soap-envelope" 
+    xmlns:m="http://www.example.org/stock"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <soap:Header>
+    <m:transaction xsi:type="m:Transaction" soap:mustUnderstand="true">
+      <m:transactionID>1234</m:transactionID>
+    </m:transaction>
+  </soap:Header>
+  <soap:Body>
+    <m:getStockPrice>
+      <m:stockName>IBM</m:stockName>
+    </m:getStockPrice>
+  </soap:Body>
+</soap:Envelope>`;
+
+    // Initialize the examples
+    document.addEventListener('DOMContentLoaded', () => {
+      setupTabs();
+      
+      // Basic example
+      document.getElementById('xml-input').value = defaultXml;
+      document.getElementById('custom-xml-input').value = defaultXml;
+      document.getElementById('ns-xml-input').value = soapXml;
+      
+      // Basic XML to JSON conversion
+      document.getElementById('xml-to-json').addEventListener('click', () => {
+        try {
+          const transformer = new XMLJSONTransformer();
+          const xmlInput = document.getElementById('xml-input').value;
+          const jsonOutput = transformer.xmlToJSON(xmlInput);
+          document.getElementById('json-output').value = JSON.stringify(jsonOutput, null, 2);
+        } catch (error) {
+          alert('Error converting XML to JSON: ' + error.message);
+        }
+      });
+      
+      // Basic JSON to XML conversion
+      document.getElementById('json-to-xml').addEventListener('click', () => {
+        try {
+          const transformer = new XMLJSONTransformer();
+
+          const jsonInput = document.getElementById('json-output').value;
+          const jsonObj = JSON.parse(jsonInput);
+          const xmlOutput = transformer.jsonToXML(jsonObj, { prettyPrint: true });
+          document.getElementById('xml-input').value = xmlOutput;
+        } catch (error) {
+          alert('Error converting JSON to XML: ' + error.message);
+        }
+      });
+      
+      // Reset example
+      document.getElementById('reset-example').addEventListener('click', () => {
+        document.getElementById('xml-input').value = defaultXml;
+        document.getElementById('json-output').value = '';
+      });
+      
+      // Custom XML to JSON conversion
+      document.getElementById('custom-xml-to-json').addEventListener('click', () => {
+        try {
+          const xmlInput = document.getElementById('custom-xml-input').value;
+          const config = getCustomConfig();
+          const jsonOutput = XMLJSONTransformer.xmlToJson(xmlInput, config);
+          document.getElementById('custom-json-output').value = JSON.stringify(jsonOutput, null, 2);
+        } catch (error) {
+          alert('Error converting XML to JSON with custom config: ' + error.message);
+        }
+      });
+      
+      // Custom JSON to XML conversion
+      document.getElementById('custom-json-to-xml').addEventListener('click', () => {
+        try {
+          const jsonInput = document.getElementById('custom-json-output').value;
+          const jsonObj = JSON.parse(jsonInput);
+          const config = getCustomConfig();
+          const xmlOutput = XMLJSONTransformer.jsonToXml(jsonObj, config);
+          document.getElementById('custom-xml-input').value = xmlOutput;
+        } catch (error) {
+          alert('Error converting JSON to XML with custom config: ' + error.message);
+        }
+      });
+      
+      // Namespace conversion
+      document.getElementById('ns-xml-to-json').addEventListener('click', () => {
+        try {
+          const xmlInput = document.getElementById('ns-xml-input').value;
+          const config = {
+            namespaceAttribute: document.getElementById('namespace-attribute').value
+          };
+          const jsonOutput = XMLJSONTransformer.xmlToJson(xmlInput, config);
+          document.getElementById('ns-json-output').value = JSON.stringify(jsonOutput, null, 2);
+        } catch (error) {
+          alert('Error converting XML to JSON with namespace config: ' + error.message);
+        }
+      });
+      
+      // Namespace JSON to XML conversion
+      document.getElementById('ns-json-to-xml').addEventListener('click', () => {
+        try {
+          const jsonInput = document.getElementById('ns-json-output').value;
+          const jsonObj = JSON.parse(jsonInput);
+          const config = {
+            namespaceAttribute: document.getElementById('namespace-attribute').value,
+            prettyPrint: true
+          };
+          const xmlOutput = XMLJSONTransformer.jsonToXml(jsonObj, config);
+          document.getElementById('ns-xml-input').value = xmlOutput;
+        } catch (error) {
+          alert('Error converting JSON to XML with namespace config: ' + error.message);
+        }
+      });
+      
+      // Reset namespace example
+      document.getElementById('ns-reset').addEventListener('click', () => {
+        document.getElementById('ns-xml-input').value = soapXml;
+        document.getElementById('ns-json-output').value = '';
+      });
+      
+      // Fetch remote XML
+      document.getElementById('fetch-xml').addEventListener('click', async () => {
+        try {
+          const url = document.getElementById('xml-url').value;
+          if (!url) {
+            alert('Please enter a URL');
+            return;
+          }
+          
+          // Display loading message
+          document.getElementById('remote-result').value = 'Loading...';
+          
+          // Get namespace configuration
+          const config = {
+            namespaceAttribute: document.getElementById('remote-namespace-attribute').value
+          };
+          
+          // Use the fetchXmlAsJson function from the XMLJSONTransformer
+          const jsonResult = await XMLJSONTransformer.fetchXmlAsJson(url, config);
+          document.getElementById('remote-result').value = JSON.stringify(jsonResult, null, 2);
+        } catch (error) {
+          document.getElementById('remote-result').value = 'Error: ' + error.message;
+        }
+      });
+      
+      // Helper function to get configuration from UI
+      function getCustomConfig() {
+        return {
+          enableNamespaces: document.getElementById('enable-namespaces').checked,
+          enableAttributes: document.getElementById('enable-attributes').checked,
+          enableTextNodes: document.getElementById('enable-text-nodes').checked,
+          enableCData: document.getElementById('enable-cdata').checked,
+          enableComments: document.getElementById('enable-comments').checked,
+          enableProcessingInstructions: document.getElementById('enable-pi').checked,
+          skipEmptyText: document.getElementById('skip-empty-text').checked,
+          prettyPrint: document.getElementById('pretty-print').checked,
+          xmlDeclaration: document.getElementById('xml-declaration').checked,
+          attributesKey: document.getElementById('attributes-key').value,
+          namespacesKey: document.getElementById('namespaces-key').value,
+          textKey: document.getElementById('text-key').value,
+          cdataKey: document.getElementById('cdata-key').value,
+          commentKey: document.getElementById('comment-key').value,
+          processingInstructionKey: document.getElementById('pi-key').value
+        };
+      }
+      
+      // Helper function to get namespace configuration
+      function getNamespaceConfig() {
+        return {
+          namespaceAttribute: document.getElementById('namespace-attribute').value,
+          prettyPrint: true
+        };
+      }
+      
+      // Helper function to set up tabs
+      function setupTabs() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        
+        tabButtons.forEach(button => {
+          button.addEventListener('click', () => {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+              tab.classList.remove('active');
+            });
+            
+            // Deactivate all buttons
+            tabButtons.forEach(btn => {
+              btn.classList.remove('active');
+            });
+            
+            // Activate the clicked button
+            button.classList.add('active');
+            
+            // Show the corresponding tab
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+          });
+        });
+      }
+    });
+  </script>
+</body>
+</html>

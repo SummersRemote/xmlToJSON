@@ -1,28 +1,65 @@
 {
   "name": "xmltojson",
-  "version": "1.3.4",
-  "description": "Configurable, lightweight XML to JSON converter.",
-  "main": "./lib/xmlToJSON.js",
-  "directories": {
-    "test": "test"
-  },
+  "version": "2.0.0",
+  "description": "Bidirectional transformation between XML and JSON with support for namespaces, mixed content, and special node types",
+  "type": "module",
+  "main": "dist/xml-json-transformer.js",
+  "module": "dist/xml-json-transformer.esm.js",
+  "browser": "dist/xml-json-transformer.min.js",
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
-    "test": "open test/SpecRunner.html"
+    "clean": "rimraf dist",
+    "build": "npm run clean && rollup -c",
+    "dev": "rollup -c -w",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "jest --watch",
+    "test:browser": "playwright test",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.js\" \"test/**/*.js\"",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run lint && npm test",
+    "serve:demo": "http-server demo -p 8080"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/metatribal/xmlToJSON.git"
+    "url": "https://github.com/metatribal/xmltojson.git"
   },
   "keywords": [
     "xml",
-    "convert",
+    "json",
     "transform",
-    "json"
+    "converter"
   ],
   "author": "metatribal",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/metatribal/xmlToJSON/issues"
   },
-  "homepage": "https://github.com/metatribal/xmlToJSON"
+  "homepage": "https://github.com/metatribal/xmlToJSON",
+  "devDependencies": {
+    "@babel/core": "^7.21.4",
+    "@babel/preset-env": "^7.21.4",
+    "@playwright/test": "^1.32.2",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^24.1.0",
+    "@rollup/plugin-node-resolve": "^15.0.2",
+    "@rollup/plugin-terser": "^0.4.1",
+    "eslint": "^8.38.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-jest": "^27.2.1",
+    "eslint-plugin-prettier": "^4.2.1",
+    "http-server": "^14.1.1",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "jsdoc": "^4.0.2",
+    "prettier": "^2.8.7",
+    "rimraf": "^5.0.0",
+    "rollup": "^3.20.2",
+    "rollup-plugin-dts": "^5.3.0",
+    "rollup-plugin-filesize": "^10.0.0"
+  }
 }
