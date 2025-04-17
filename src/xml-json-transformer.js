@@ -863,11 +863,11 @@ export class XMLJSONTransformer {
   //   }
   }
   
-// Export for both environments
-if (typeof module !== 'undefined' && module.exports) {
-  // Node.js / Jest / CommonJS
-  module.exports = XMLJSONTransformer;
-} else if (typeof window !== 'undefined') {
-  // Browser
-  window.XMLJSONTransformer = XMLJSONTransformer;
-}
+// // Export for both environments
+// if (typeof module !== 'undefined' && module.exports) {
+//   // Node.js / Jest / CommonJS
+//   module.exports = XMLJSONTransformer;
+// } else if (typeof window !== 'undefined') {
+//   // Browser
+//   window.XMLJSONTransformer = XMLJSONTransformer;
+// }

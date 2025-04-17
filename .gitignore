@@ -50,3 +50,6 @@ docs/api/
 # Temporary files
 .tmp/
 temp/
+test_reports/html/report.html
+test_reports/html/jest-html-reporters-attach/report/index.js
+test_reports/html/jest-html-reporters-attach/report/result.js
