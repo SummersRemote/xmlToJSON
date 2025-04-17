@@ -100,6 +100,7 @@ describe("XMLJSONTransformer", () => {
       };
 
       const result = transformer.jsonToString(json);
+      console.log(result);
       expect(result).toContain("\n");
       expect(result).toContain("  ");
     });
@@ -130,11 +131,11 @@ describe("XMLJSONTransformer", () => {
       };
 
       const result = transformer.xmlToJSON(xml);
-      expect(result).toEqual(expected);
+      expect(result).toNormalizeEqual(expected);
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.includes('id="123"')).toBe(true);
-      expect(roundTrip.includes('category="book"')).toBe(true);
+      expect(roundTrip).toNormalizeContain('id="123"');
+      expect(roundTrip).toNormalizeContain('category="book"');
     });
 
     test("should handle attributes with namespace", () => {
@@ -288,7 +289,7 @@ describe("XMLJSONTransformer", () => {
       expect(result["root"]["@cdata"]).toNormalizeContain("<b>Bold text</b>");
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.toNormalizeContain("<![CDATA[<b>Bold text</b>]]>"));
+      expect(roundTrip).toNormalizeContain("<![CDATA[<b>Bold text</b>]]>");
     });
 
     test("should handle multiple CDATA sections", () => {
@@ -301,8 +302,8 @@ describe("XMLJSONTransformer", () => {
       expect(result.root["@cdata"][1]).toBe("Second section");
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.toNormalizeContain("<![CDATA[First section]]>"));
-      expect(roundTrip.toNormalizeContain("<![CDATA[Second section]]>"));
+      expect(roundTrip).toNormalizeContain("<![CDATA[First section]]>");
+      expect(roundTrip).toNormalizeContain("<![CDATA[Second section]]>");
     });
 
     test("should handle comments", () => {
@@ -368,17 +369,17 @@ describe("XMLJSONTransformer", () => {
         `;
 
       const result = noSpecialNodesTransformer.xmlToJSON(xml);
-
+      
       expect(result.root["@comments"].length).toBe(0);
       expect(result.root["@cdata"].length).toBe(0);
       expect(result.root["@processing"].length).toBe(0);
       expect(result.root["@val"]).toNormalizeContain("Text content");
 
       const roundTrip = noSpecialNodesTransformer.jsonToXML(result);
-      expect(roundTrip.not().toNormalizeContain("Comment"));
-      expect(roundTrip.not().toNormalizeContain("CDATA"));
-      expect(roundTrip.not().toNormalizeContain("pi-target"));
-      expect(roundTrip.toNormalizeContain("Text content"));
+      expect(roundTrip).not().toNormalizeContain("Comment");
+      expect(roundTrip).not().toNormalizeContain("CDATA");
+      expect(roundTrip).not().toNormalizeContain("pi-target");
+      expect(roundTrip).toNormalizeContain("Text content");
     });
   });
 
@@ -396,7 +397,7 @@ describe("XMLJSONTransformer", () => {
       expect(grandchild["@val"]).toEqual("Content");
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.includes("<grandchild>Content</grandchild>")).toBe(true);
+      expect(roundTrip).toNormalizeContain("<grandchild>Content</grandchild>");
     });
 
     test("should handle deeply nested elements", () => {
@@ -413,7 +414,7 @@ describe("XMLJSONTransformer", () => {
       expect(e["@val"]).toBe("Deep");
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.includes("<e>Deep</e>")).toBe(true);
+      expect(roundTrip).toNormalizeContain("<e>Deep</e>");
     });
 
     test("should handle elements with siblings", () => {
@@ -429,9 +430,9 @@ describe("XMLJSONTransformer", () => {
       expect(children[2].third["@val"]).toBe("3");
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.includes("<first>1</first>")).toBe(true);
-      expect(roundTrip.includes("<second>2</second>")).toBe(true);
-      expect(roundTrip.includes("<third>3</third>")).toBe(true);
+      expect(roundTrip).toNormalizeContain("<first>1</first>");
+      expect(roundTrip).toNormalizeContain("<second>2</second>");
+      expect(roundTrip).toNormalizeContain("<third>3</third>");
     });
 
     test("should handle elements with mixed siblings", () => {
@@ -455,16 +456,10 @@ describe("XMLJSONTransformer", () => {
       expect(children[1].another["@val"]).toBe("Another element");
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.includes("<text>Text element</text>")).toBe(true);
-      expect(roundTrip.includes("<!-- Comment between elements -->")).toBe(
-        true
-      );
-      expect(roundTrip.includes("<![CDATA[CDATA between elements]]>")).toBe(
-        true
-      );
-      expect(roundTrip.includes("<another>Another element</another>")).toBe(
-        true
-      );
+      expect(roundTrip).toNormalizeContain("<text>Text element</text>");
+      expect(roundTrip).toNormalizeContain("<!-- Comment between elements -->");
+      expect(roundTrip).toNormalizeContain("<![CDATA[CDATA between elements]]>");
+      expect(roundTrip).toNormalizeContain("<another>Another element</another>");
     });
   });
 
