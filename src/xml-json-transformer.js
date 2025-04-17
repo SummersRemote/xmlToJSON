@@ -3,7 +3,7 @@
  * A utility class for transforming between XML and JSON with support for
  * namespaces, attributes, CDATA, comments, and processing instructions.
  */
-class XMLJSONTransformer {
+export class XMLJSONTransformer {
     /**
      * Creates a new XMLJSONTransformer with the specified configuration
      * @param {Object} config - Configuration options
@@ -535,8 +535,6 @@ class XMLJSONTransformer {
       return typeof str === 'string' && /<[a-z][\s\S]*>/i.test(str);
     }
     
-
-
     _prettyPrintXML(xmlString) {
       const PADDING = this.xmlIndent;
     
@@ -865,9 +863,11 @@ class XMLJSONTransformer {
   //   }
   }
   
-  // Export for browser and Node.js environments
-  if (typeof window !== 'undefined') {
-    window.XMLJSONTransformer = XMLJSONTransformer;
-  } else if (typeof module !== 'undefined' && module.exports) {
-    module.exports = XMLJSONTransformer;
-  }
+// Export for both environments
+if (typeof module !== 'undefined' && module.exports) {
+  // Node.js / Jest / CommonJS
+  module.exports = XMLJSONTransformer;
+} else if (typeof window !== 'undefined') {
+  // Browser
+  window.XMLJSONTransformer = XMLJSONTransformer;
+}

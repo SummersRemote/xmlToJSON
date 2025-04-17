@@ -1,17 +1,15 @@
 export default {
-    transform: {
-      "^.+\\.[t|j]sx?$": "babel-jest"
-    },
-    transformIgnorePatterns: [
-      "node_modules/(?!(module-that-needs-to-be-transformed)/)"
-    ],
-    moduleFileExtensions: ["js", "json"],
-    testEnvironment: "jsdom",
-    testMatch: ["**/test/unit/**/*.test.js"],
-    // Remove the extensionsToTreatAsEsm setting
-    moduleNameMapper: {
-      "^(\\.{1,2}/.*)\\.js$": "$1"
-    },
-    coverageDirectory: "coverage",
-    collectCoverageFrom: ["src/**/*.js"]
-  };
+  testEnvironment: 'jsdom',
+  verbose: true,
+  setupFilesAfterEnv: ['./test/customMatchers.js'],
+  reporters: [
+    'default',
+    ['jest-html-reporters', {
+      publicPath: 'test_reports/html',
+      filename: 'report.html',
+      expand: true, // expands test case results
+      includeFailureMsg: true,
+      includeConsoleLog: true
+    }]
+  ]
+};

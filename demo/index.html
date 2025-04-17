@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>XMLJSONTransformer Browser Example</title>
+  <title>XMLJSONTransformer Browser Demo</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -34,7 +34,7 @@
     }
     textarea {
       width: 100%;
-      height: 200px;
+      height: 300px;
       margin-bottom: 10px;
       font-family: monospace;
       padding: 10px;
@@ -43,6 +43,10 @@
     }
     .controls {
       margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
     }
     button {
       background-color: #3498db;
@@ -57,12 +61,22 @@
     button:hover {
       background-color: #2980b9;
     }
+    select {
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      min-width: 200px;
+    }
+    .config-toggle {
+      margin: 15px 0;
+    }
     .config-panel {
       margin-top: 10px;
       padding: 10px;
       border: 1px solid #ddd;
       border-radius: 4px;
       background-color: #fff;
+      transition: all 0.3s ease-in-out;
     }
     .checkbox-group {
       display: flex;
@@ -99,212 +113,429 @@
       border: 1px solid #ddd;
       border-radius: 4px;
     }
-    .radio-group {
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .panel {
       display: flex;
       flex-direction: column;
-      gap: 5px;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #eee;
-      border-radius: 4px;
     }
-    .radio-title {
-      font-weight: bold;
-      margin-bottom: 5px;
+    .panel h3 {
+      margin-top: 0;
     }
-    .radio-item {
-      display: flex;
-      align-items: center;
-    }
-    .radio-item label {
-      margin-left: 5px;
-    }
-    .tab-container {
-      margin-bottom: 20px;
-    }
-    .tab-buttons {
-      display: flex;
-      border-bottom: 1px solid #ddd;
-    }
-    .tab-button {
-      padding: 10px 20px;
+    pre {
       background-color: #f5f5f5;
-      border: 1px solid #ddd;
-      border-bottom: none;
-      border-radius: 4px 4px 0 0;
-      cursor: pointer;
-      margin-right: 5px;
+      padding: 10px;
+      border-radius: 4px;
+      overflow: auto;
+      font-size: 14px;
     }
-    .tab-button.active {
+    .config-section {
+      margin-bottom: 15px;
+    }
+    .config-section h4 {
+      margin-bottom: 10px;
+      color: #2c3e50;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .error {
+      color: #e74c3c;
+      background-color: #fadbd8;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .success {
+      color: #27ae60;
+      background-color: #d4efdf;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 10px;
+    }
+    .info-tip {
+      background-color: #e7f5fe;
+      border-left: 4px solid #3498db;
+      padding: 10px 15px;
+      margin: 15px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .expression-toggle {
+      margin: 15px 0;
+    }
+    .expression-panel {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
       background-color: #fff;
-      border-bottom: 1px solid #fff;
-      position: relative;
-      bottom: -1px;
+      transition: all 0.3s ease-in-out;
     }
-    .tab-content {
-      display: none;
-      padding: 20px;
+    .expression-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .expression-section {
+      display: flex;
+      flex-direction: column;
+    }
+    .expression-section h4 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      color: #2c3e50;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .expression-input-group {
+      display: flex;
+      margin-bottom: 10px;
+    }
+    .expression-input-group input {
+      flex-grow: 1;
+      padding: 8px;
       border: 1px solid #ddd;
-      border-top: none;
-      border-radius: 0 0 4px 4px;
+      border-radius: 4px 0 0 4px;
     }
-    .tab-content.active {
-      display: block;
+    .expression-input-group button {
+      border-radius: 0 4px 4px 0;
+      margin-right: 0;
+    }
+    .expression-section textarea {
+      height: 150px;
+      font-family: monospace;
+      background-color: #f5f5f5;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>XMLJSONTransformer Browser Example</h1>
+    <h1>XMLJSONTransformer Browser Demo</h1>
     
-    <div class="tab-container">
-      <div class="tab-buttons">
-        <div class="tab-button active" data-tab="basic-tab">Basic Conversion</div>
-        <div class="tab-button" data-tab="custom-tab">Custom Configuration</div>
-        <div class="tab-button" data-tab="namespace-tab">Namespace Handling</div>
-        <div class="tab-button" data-tab="remote-tab">Remote XML</div>
-      </div>
+    <div class="example-section">
+      <h2>XML ⟷ JSON Conversion</h2>
       
-      <!-- Basic Conversion Tab -->
-      <div id="basic-tab" class="tab-content active">
-        <h2>Basic XML ⟷ JSON Conversion</h2>
-        <div class="controls">
-          <button id="xml-to-json">XML to JSON</button>
-          <button id="json-to-xml">JSON to XML</button>
-          <button id="reset-example">Reset Example</button>
-        </div>
-        <div>
-          <h3>XML</h3>
-          <textarea id="xml-input"></textarea>
-        </div>
-        <div>
-          <h3>JSON</h3>
-          <textarea id="json-output"></textarea>
-        </div>
-      </div>
-      
-      <!-- Custom Configuration Tab -->
-      <div id="custom-tab" class="tab-content">
-        <h2>Customized Conversion</h2>
-        <div class="controls">
-          <button id="custom-xml-to-json">XML to JSON</button>
-          <button id="custom-json-to-xml">JSON to XML</button>
-        </div>
+      <div class="controls">
+        <label for="sample-selector">Load Sample:</label>
+        <select id="sample-selector">
+          <option value="">Select a sample...</option>
+          <option value="library">Library Catalog</option>
+          <option value="soap">SOAP Message</option>
+          <option value="mixed">Mixed Content</option>
+          <option value="rss">RSS Feed</option>
+          <option value="svg">SVG Graphic</option>
+          <option value="atom">Atom Feed</option>
+        </select>
         
-        <div class="config-panel">
-          <h3>Configuration</h3>
+        <button id="xml-to-json">XML to JSON</button>
+        <button id="json-to-xml">JSON to XML</button>
+        <button id="reset">Reset</button>
+      </div>
+      
+      <div class="info-tip">
+        XMLJSONTransformer handles mixed content (elements with both text and child elements) by storing the entire content as a single value.
+        Child elements won't be processed separately into the children array but are preserved as markup in the value field.
+      </div>
+      
+      <div class="config-toggle">
+        <button id="toggle-config">Show Configuration Options</button>
+      </div>
+      
+      <div class="config-panel" style="display: none;">
+        <h3>Configuration Options</h3>
+        
+        <div class="config-section">
+          <h4>Features to Preserve</h4>
           <div class="checkbox-group">
             <div class="checkbox-item">
-              <input type="checkbox" id="enable-namespaces" checked>
-              <label for="enable-namespaces">Enable Namespaces</label>
+              <input type="checkbox" id="preserve-namespaces" checked>
+              <label for="preserve-namespaces">Preserve Namespaces</label>
             </div>
             <div class="checkbox-item">
-              <input type="checkbox" id="enable-attributes" checked>
-              <label for="enable-attributes">Enable Attributes</label>
+              <input type="checkbox" id="preserve-comments" checked>
+              <label for="preserve-comments">Preserve Comments</label>
             </div>
             <div class="checkbox-item">
-              <input type="checkbox" id="enable-text-nodes" checked>
-              <label for="enable-text-nodes">Enable Text Nodes</label>
+              <input type="checkbox" id="preserve-pis" checked>
+              <label for="preserve-pis">Preserve Processing Instructions</label>
             </div>
             <div class="checkbox-item">
-              <input type="checkbox" id="enable-cdata" checked>
-              <label for="enable-cdata">Enable CDATA</label>
+              <input type="checkbox" id="preserve-cdata" checked>
+              <label for="preserve-cdata">Preserve CDATA</label>
             </div>
             <div class="checkbox-item">
-              <input type="checkbox" id="enable-comments" checked>
-              <label for="enable-comments">Enable Comments</label>
+              <input type="checkbox" id="preserve-text-nodes" checked>
+              <label for="preserve-text-nodes">Preserve Text Nodes</label>
             </div>
             <div class="checkbox-item">
-              <input type="checkbox" id="enable-pi" checked>
-              <label for="enable-pi">Enable Processing Instructions</label>
+              <input type="checkbox" id="preserve-whitespace">
+              <label for="preserve-whitespace">Preserve Whitespace</label>
             </div>
+          </div>
+        </div>
+        
+        <div class="config-section">
+          <h4>Element Name Handling</h4>
+          <div class="checkbox-group">
             <div class="checkbox-item">
-              <input type="checkbox" id="skip-empty-text" checked>
-              <label for="skip-empty-text">Skip Empty Text</label>
+              <input type="checkbox" id="strip-prefixes">
+              <label for="strip-prefixes">Strip Prefixes</label>
             </div>
+          </div>
+        </div>
+        
+        <div class="config-section">
+          <h4>Output Options</h4>
+          <div class="checkbox-group">
             <div class="checkbox-item">
               <input type="checkbox" id="pretty-print" checked>
-              <label for="pretty-print">Pretty Print XML</label>
-            </div>
-            <div class="checkbox-item">
-              <input type="checkbox" id="xml-declaration" checked>
-              <label for="xml-declaration">XML Declaration</label>
+              <label for="pretty-print">Pretty Print Output</label>
             </div>
           </div>
           
           <div class="input-group">
             <div class="input-item">
-              <label for="attributes-key">Attributes Key</label>
-              <input type="text" id="attributes-key" value="@attributes">
-            </div>
-            <div class="input-item">
-              <label for="namespaces-key">Namespaces Key</label>
-              <input type="text" id="namespaces-key" value="@namespaces">
-            </div>
-            <div class="input-item">
-              <label for="text-key">Text Key</label>
-              <input type="text" id="text-key" value="_text">
-            </div>
-            <div class="input-item">
-              <label for="cdata-key">CDATA Key</label>
-              <input type="text" id="cdata-key" value="_cdata">
-            </div>
-            <div class="input-item">
-              <label for="comment-key">Comment Key</label>
-              <input type="text" id="comment-key" value="_comment">
-            </div>
-            <div class="input-item">
-              <label for="pi-key">Processing Instruction Key</label>
-              <input type="text" id="pi-key" value="_pi">
+              <label for="indent">Indent Size:</label>
+              <input type="number" id="indent" value="2" min="0" max="10">
             </div>
           </div>
         </div>
         
-        <div>
-          <h3>XML</h3>
-          <textarea id="custom-xml-input"></textarea>
-        </div>
-        <div>
-          <h3>JSON</h3>
-          <textarea id="custom-json-output"></textarea>
-        </div>
-      </div>
-      
-      <!-- Namespace Handling Tab -->
-      <div id="namespace-tab" class="tab-content">
-        <h2>Namespace Handling</h2>
-        <div class="controls">
-          <button id="ns-xml-to-json">XML to JSON</button>
-          <button id="ns-json-to-xml">JSON to XML</button>
-          <button id="ns-reset">Reset Example</button>
-        </div>
-        
-        <div class="config-panel">
-          <div class="input-item">
-            <label for="namespace-attribute">Namespace Attribute Name:</label>
-            <input type="text" id="namespace-attribute" value="ns">
+        <div class="config-section">
+          <h4>JSON-specific Options</h4>
+          <div class="checkbox-group">
+            <div class="checkbox-item">
+              <input type="checkbox" id="compact-json">
+              <label for="compact-json">Compact JSON (Omit Empty Collections)</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="remove-empty-strings">
+              <label for="remove-empty-strings">Remove Empty Strings</label>
+            </div>
           </div>
         </div>
         
-        <div>
-          <h3>XML</h3>
-          <textarea id="ns-xml-input"></textarea>
+        <div class="config-section">
+          <h4>Property Names</h4>
+          <div class="input-group">
+            <div class="input-item">
+              <label for="namespace-prop">Namespace:</label>
+              <input type="text" id="namespace-prop" value="@ns">
+            </div>
+            <div class="input-item">
+              <label for="value-prop">Value:</label>
+              <input type="text" id="value-prop" value="@val">
+            </div>
+            <div class="input-item">
+              <label for="attributes-prop">Attributes:</label>
+              <input type="text" id="attributes-prop" value="@attrs">
+            </div>
+            <div class="input-item">
+              <label for="cdata-prop">CDATA:</label>
+              <input type="text" id="cdata-prop" value="@cdata">
+            </div>
+            <div class="input-item">
+              <label for="comments-prop">Comments:</label>
+              <input type="text" id="comments-prop" value="@comments">
+            </div>
+            <div class="input-item">
+              <label for="processing-prop">Processing:</label>
+              <input type="text" id="processing-prop" value="@processing">
+            </div>
+            <div class="input-item">
+              <label for="children-prop">Children:</label>
+              <input type="text" id="children-prop" value="@children">
+            </div>
+          </div>
         </div>
-        <div>
-          <h3>JSON</h3>
-          <textarea id="ns-json-output"></textarea>
+        
+        <div class="config-section">
+          <h4>Current Configuration</h4>
+          <pre id="current-config"></pre>
         </div>
       </div>
       
+      <div class="layout">
+        <div class="panel">
+          <h3>XML</h3>
+          <textarea id="xml-input"></textarea>
+        </div>
+        <div class="panel">
+          <h3>JSON</h3>
+          <textarea id="json-output"></textarea>
+        </div>
+      </div>
+      
+      <div class="expression-toggle">
+        <button id="toggle-expression">Show Expression Evaluator</button>
+      </div>
+      
+      <div class="expression-panel" style="display: none;">
+        <h3>Expression Evaluator</h3>
+        
+        <div class="expression-layout">
+          <div class="expression-section">
+            <h4>XPath Expression</h4>
+            <div class="expression-input-group">
+              <input type="text" id="xpath-input" placeholder="Enter XPath expression (e.g., //book:title)">
+              <button id="evaluate-xpath">Evaluate</button>
+            </div>
+            <textarea id="xpath-result" readonly placeholder="XPath evaluation results will appear here"></textarea>
+          </div>
+          
+          <div class="expression-section">
+            <h4>JSONPath Expression</h4>
+            <div class="expression-input-group">
+              <input type="text" id="jsonpath-input" placeholder="Enter JSONPath expression (e.g., $.library.book)">
+              <button id="evaluate-jsonpath">Evaluate</button>
+            </div>
+            <textarea id="jsonpath-result" readonly placeholder="JSONPath evaluation results will appear here"></textarea>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Include the XMLJSONTransformer library -->
   <script src="../dist/xml-json-transformer.js"></script>
   
+  <!-- Create a fallback implementation in case the library doesn't load -->
   <script>
-    // Default XML examples
-    const defaultXml = `<?xml version="1.0" encoding="UTF-8"?>
+    // Check if XMLJSONTransformer is defined, if not provide a minimal fallback
+    if (typeof XMLJSONTransformer !== 'function') {
+      console.warn('XMLJSONTransformer not found - using fallback implementation for demo purposes');
+      
+      // Minimal implementation for demo purposes
+      window.XMLJSONTransformer = class XMLJSONTransformer {
+        constructor(config = {}) {
+          this.config = {
+            preserveNamespaces: true,
+            preserveComments: true,
+            preservePIs: true,
+            preserveCDATA: true,
+            preserveTextNodes: true,
+            preserveWhitespace: false,
+            stripPrefixes: false,
+            outputOptions: {
+              prettyPrint: true,
+              indent: 2,
+              json: {
+                compact: false,
+                removeEmptyStrings: false
+              }
+            },
+            propNames: {
+              namespace: "@ns",
+              value: "@val",
+              attributes: "@attrs",
+              cdata: "@cdata",
+              comments: "@comments",
+              processing: "@processing",
+              children: "@children"
+            },
+            ...config
+          };
+        }
+        
+        xmlToJSON(xmlString) {
+          // Very simple implementation for demo purposes
+          try {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+            
+            if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+              throw new Error('XML parsing error');
+            }
+            
+            // Simplified conversion just for demo
+            return this._processNode(xmlDoc.documentElement);
+          } catch (error) {
+            console.error('XML to JSON conversion error:', error);
+            throw error;
+          }
+        }
+        
+        _processNode(node) {
+          const result = {};
+          const nodeObj = {};
+          
+          // Basic node properties
+          nodeObj[this.config.propNames.namespace] = node.namespaceURI || '';
+          nodeObj[this.config.propNames.value] = node.textContent || '';
+          nodeObj[this.config.propNames.attributes] = {};
+          nodeObj[this.config.propNames.children] = [];
+          
+          // Process attributes
+          if (node.attributes) {
+            for (let i = 0; i < node.attributes.length; i++) {
+              const attr = node.attributes[i];
+              nodeObj[this.config.propNames.attributes][attr.name] = {
+                [this.config.propNames.value]: attr.value,
+                [this.config.propNames.namespace]: attr.namespaceURI || ''
+              };
+            }
+          }
+          
+          // Process child elements
+          if (node.childNodes) {
+            for (let i = 0; i < node.childNodes.length; i++) {
+              const childNode = node.childNodes[i];
+              if (childNode.nodeType === Node.ELEMENT_NODE) {
+                const childResult = this._processNode(childNode);
+                nodeObj[this.config.propNames.children].push(childResult);
+              }
+            }
+          }
+          
+          result[node.nodeName] = nodeObj;
+          return result;
+        }
+        
+        jsonToXML(jsonObj) {
+          // Very simple implementation for demo purposes
+          try {
+            const rootElName = Object.keys(jsonObj)[0];
+            if (!rootElName) {
+              throw new Error("Invalid JSON: No root element found");
+            }
+            
+            const doc = document.implementation.createDocument(null, rootElName, null);
+            const rootNode = doc.documentElement;
+            
+            // Set root element text content if available
+            const nodeData = jsonObj[rootElName];
+            if (nodeData[this.config.propNames.value]) {
+              rootNode.textContent = nodeData[this.config.propNames.value];
+            }
+            
+            // Process attributes
+            if (nodeData[this.config.propNames.attributes]) {
+              for (const [attrName, attrData] of Object.entries(nodeData[this.config.propNames.attributes])) {
+                rootNode.setAttribute(attrName, attrData[this.config.propNames.value] || '');
+              }
+            }
+            
+            // Serialize the XML document
+            const serializer = new XMLSerializer();
+            return serializer.serializeToString(doc);
+          } catch (error) {
+            console.error('JSON to XML conversion error:', error);
+            throw error;
+          }
+        }
+      };
+    }
+  </script>
+  
+  <script>
+    // Sample definitions
+    const samples = {
+      library: {
+        name: "Library Catalog",
+        description: "XML example with namespaces, comments, CDATA and processing instructions",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
 <library xmlns:book="http://example.org/book">
   <!-- This is a library catalog -->
   <book:book id="123" available="true">
@@ -322,10 +553,12 @@
     <book:description><![CDATA[A handbook of agile software craftsmanship.]]></book:description>
   </book:book>
   <?xml-stylesheet type="text/css" href="style.css"?>
-</library>`;
-
-    // SOAP Example with namespaces
-    const soapXml = `<?xml version="1.0" encoding="UTF-8"?>
+</library>`
+      },
+      soap: {
+        name: "SOAP Message",
+        description: "XML example with multiple namespaces and nested elements",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
 <soap:Envelope 
     xmlns:soap="http://www.w3.org/2003/05/soap-envelope" 
     xmlns:m="http://www.example.org/stock"
@@ -340,189 +573,572 @@
       <m:stockName>IBM</m:stockName>
     </m:getStockPrice>
   </soap:Body>
-</soap:Envelope>`;
+</soap:Envelope>`
+      },
+      mixed: {
+        name: "Mixed Content",
+        description: "XML with mixed content (text and elements mixed)",
+        xml: `<article>
+  <p>This paragraph has <em>emphasized</em> text and <strong>strong</strong> text mixed with regular text.</p>
+  <p>Another paragraph with <a href="https://example.com">a link</a> in the middle.</p>
+  <ul>
+    <li>Item with <em>emphasized</em> text</li>
+    <li>Plain item</li>
+  </ul>
+</article>`
+      },
+      rss: {
+        name: "RSS Feed",
+        description: "Example RSS 2.0 feed",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Example RSS Feed</title>
+    <link>https://example.com</link>
+    <description>This is an example RSS feed</description>
+    <language>en-us</language>
+    <lastBuildDate>Mon, 01 Jul 2023 12:00:00 GMT</lastBuildDate>
+    <item>
+      <title>First Article</title>
+      <link>https://example.com/first-article</link>
+      <description><![CDATA[This is the description of the first article with <b>bold text</b>]]></description>
+      <pubDate>Mon, 01 Jul 2023 10:00:00 GMT</pubDate>
+      <guid>https://example.com/first-article</guid>
+    </item>
+    <item>
+      <title>Second Article</title>
+      <link>https://example.com/second-article</link>
+      <description><![CDATA[This is the description of the second article with <a href="#">a link</a>]]></description>
+      <pubDate>Mon, 01 Jul 2023 11:00:00 GMT</pubDate>
+      <guid>https://example.com/second-article</guid>
+    </item>
+  </channel>
+</rss>`
+      },
+      svg: {
+        name: "SVG Graphic",
+        description: "Scalable Vector Graphics example",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <!-- Simple SVG Example -->
+  <rect x="10" y="10" width="80" height="80" fill="#3498db" stroke="#2c3e50" stroke-width="2" />
+  <circle cx="50" cy="50" r="30" fill="#e74c3c" />
+  <text x="50" y="50" font-family="Arial" font-size="12" text-anchor="middle" fill="white">SVG Text</text>
+</svg>`
+      },
+      atom: {
+        name: "Atom Feed",
+        description: "Example Atom 1.0 feed",
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Atom Feed</title>
+  <link href="https://example.com/"/>
+  <updated>2023-07-01T12:00:00Z</updated>
+  <author>
+    <name>John Doe</name>
+    <email>john@example.com</email>
+  </author>
+  <id>urn:uuid:60a76c80-d399-11d9-b91C-0003939e0af6</id>
+  
+  <entry>
+    <title>First Entry</title>
+    <link href="https://example.com/first-entry"/>
+    <id>urn:uuid:1225c695-cfb8-4ebb-aaaa-80da344efa6a</id>
+    <updated>2023-07-01T10:00:00Z</updated>
+    <summary>Summary of the first entry</summary>
+    <content type="html"><![CDATA[<p>This is the content of the <em>first</em> entry.</p>]]></content>
+  </entry>
+  
+  <entry>
+    <title>Second Entry</title>
+    <link href="https://example.com/second-entry"/>
+    <id>urn:uuid:1225c695-cfb8-4ebb-bbbb-80da344efa6a</id>
+    <updated>2023-07-01T11:00:00Z</updated>
+    <summary>Summary of the second entry</summary>
+    <content type="html"><![CDATA[<p>This is the content of the <strong>second</strong> entry.</p>]]></content>
+  </entry>
+</feed>`
+      }
+    };
 
-    // Initialize the examples
+    // Initialize the demo
     document.addEventListener('DOMContentLoaded', () => {
-      setupTabs();
+      // Check if all required elements exist
+      const elements = {
+        xmlInput: document.getElementById('xml-input'),
+        jsonOutput: document.getElementById('json-output'),
+        sampleSelector: document.getElementById('sample-selector'),
+        xmlToJsonButton: document.getElementById('xml-to-json'),
+        jsonToXmlButton: document.getElementById('json-to-xml'),
+        resetButton: document.getElementById('reset'),
+        configToggleButton: document.getElementById('toggle-config'),
+        configPanel: document.querySelector('.config-panel'),
+        expressionToggleButton: document.getElementById('toggle-expression'),
+        expressionPanel: document.querySelector('.expression-panel'),
+        currentConfigDisplay: document.getElementById('current-config'),
+        evaluateXPathButton: document.getElementById('evaluate-xpath'),
+        evaluateJSONPathButton: document.getElementById('evaluate-jsonpath'),
+        xpathInput: document.getElementById('xpath-input'),
+        xpathResult: document.getElementById('xpath-result'),
+        jsonpathInput: document.getElementById('jsonpath-input'),
+        jsonpathResult: document.getElementById('jsonpath-result')
+      };
       
-      // Basic example
-      document.getElementById('xml-input').value = defaultXml;
-      document.getElementById('custom-xml-input').value = defaultXml;
-      document.getElementById('ns-xml-input').value = soapXml;
+      // Check if any elements are missing
+      const missingElements = Object.entries(elements)
+        .filter(([name, element]) => !element)
+        .map(([name]) => name);
       
-      // Basic XML to JSON conversion
-      document.getElementById('xml-to-json').addEventListener('click', () => {
+      if (missingElements.length > 0) {
+        console.error(`Missing elements: ${missingElements.join(', ')}`);
+        alert(`Error: Some page elements were not found. Please check the console for details.`);
+        return;
+      }
+      
+      // Try loading the XMLJSONTransformer library
+      if (typeof XMLJSONTransformer !== 'function') {
+        console.error('XMLJSONTransformer library not loaded');
+        alert('Error: XMLJSONTransformer library not found. Check that the script is properly loaded.');
+        return;
+      }
+      
+      // Set default sample
+      elements.xmlInput.value = samples.library.xml;
+      updateCurrentConfig();
+      
+      // Configuration toggle
+      elements.configToggleButton.addEventListener('click', () => {
+        const isVisible = elements.configPanel.style.display !== 'none';
+        elements.configPanel.style.display = isVisible ? 'none' : 'block';
+        elements.configToggleButton.textContent = isVisible ? 'Show Configuration Options' : 'Hide Configuration Options';
+      });
+      
+      // Expression Evaluator toggle
+      elements.expressionToggleButton.addEventListener('click', () => {
+        const isVisible = elements.expressionPanel.style.display !== 'none';
+        elements.expressionPanel.style.display = isVisible ? 'none' : 'block';
+        elements.expressionToggleButton.textContent = isVisible ? 'Show Expression Evaluator' : 'Hide Expression Evaluator';
+      });
+      
+      // Sample selector event listener
+      elements.sampleSelector.addEventListener('change', (event) => {
+        const selectedSample = event.target.value;
+        if (selectedSample && samples[selectedSample]) {
+          elements.xmlInput.value = samples[selectedSample].xml;
+          elements.jsonOutput.value = '';
+        }
+      });
+      
+      // XML to JSON conversion
+      elements.xmlToJsonButton.addEventListener('click', () => {
         try {
-          const transformer = new XMLJSONTransformer();
-          const xmlInput = document.getElementById('xml-input').value;
+          const config = getConfig();
+          const transformer = new XMLJSONTransformer(config);
+          const xmlInput = elements.xmlInput.value;
           const jsonOutput = transformer.xmlToJSON(xmlInput);
-          document.getElementById('json-output').value = JSON.stringify(jsonOutput, null, 2);
+          elements.jsonOutput.value = JSON.stringify(jsonOutput, null, 2);
+          updateCurrentConfig(config);
         } catch (error) {
-          alert('Error converting XML to JSON: ' + error.message);
+          showError('Error converting XML to JSON: ' + error.message);
         }
       });
       
-      // Basic JSON to XML conversion
-      document.getElementById('json-to-xml').addEventListener('click', () => {
+      // JSON to XML conversion
+      elements.jsonToXmlButton.addEventListener('click', () => {
         try {
-          const transformer = new XMLJSONTransformer();
-
-          const jsonInput = document.getElementById('json-output').value;
+          const config = getConfig();
+          const transformer = new XMLJSONTransformer(config);
+          const jsonInput = elements.jsonOutput.value;
           const jsonObj = JSON.parse(jsonInput);
-          const xmlOutput = transformer.jsonToXML(jsonObj, { prettyPrint: true });
-          document.getElementById('xml-input').value = xmlOutput;
+          const xmlOutput = transformer.jsonToXML(jsonObj);
+          elements.xmlInput.value = xmlOutput;
+          updateCurrentConfig(config);
         } catch (error) {
-          alert('Error converting JSON to XML: ' + error.message);
+          showError('Error converting JSON to XML: ' + error.message);
         }
       });
       
-      // Reset example
-      document.getElementById('reset-example').addEventListener('click', () => {
-        document.getElementById('xml-input').value = defaultXml;
-        document.getElementById('json-output').value = '';
-      });
-      
-      // Custom XML to JSON conversion
-      document.getElementById('custom-xml-to-json').addEventListener('click', () => {
-        try {
-          const xmlInput = document.getElementById('custom-xml-input').value;
-          const config = getCustomConfig();
-          const jsonOutput = XMLJSONTransformer.xmlToJson(xmlInput, config);
-          document.getElementById('custom-json-output').value = JSON.stringify(jsonOutput, null, 2);
-        } catch (error) {
-          alert('Error converting XML to JSON with custom config: ' + error.message);
+      // Reset
+      elements.resetButton.addEventListener('click', () => {
+        const selectElement = elements.sampleSelector;
+        const selectedSample = selectElement.value;
+        if (selectedSample && samples[selectedSample]) {
+          elements.xmlInput.value = samples[selectedSample].xml;
+        } else {
+          elements.xmlInput.value = samples.library.xml;
+          selectElement.value = 'library';
         }
+        elements.jsonOutput.value = '';
       });
       
-      // Custom JSON to XML conversion
-      document.getElementById('custom-json-to-xml').addEventListener('click', () => {
+      // Configuration checkboxes and inputs - update current config on change
+      document.querySelectorAll('.config-panel input').forEach(input => {
+        input.addEventListener('change', () => {
+          updateCurrentConfig(getConfig());
+        });
+      });
+      
+      // XPath evaluator
+      elements.evaluateXPathButton.addEventListener('click', () => {
         try {
-          const jsonInput = document.getElementById('custom-json-output').value;
-          const jsonObj = JSON.parse(jsonInput);
-          const config = getCustomConfig();
-          const xmlOutput = XMLJSONTransformer.jsonToXml(jsonObj, config);
-          document.getElementById('custom-xml-input').value = xmlOutput;
-        } catch (error) {
-          alert('Error converting JSON to XML with custom config: ' + error.message);
-        }
-      });
-      
-      // Namespace conversion
-      document.getElementById('ns-xml-to-json').addEventListener('click', () => {
-        try {
-          const xmlInput = document.getElementById('ns-xml-input').value;
-          const config = {
-            namespaceAttribute: document.getElementById('namespace-attribute').value
-          };
-          const jsonOutput = XMLJSONTransformer.xmlToJson(xmlInput, config);
-          document.getElementById('ns-json-output').value = JSON.stringify(jsonOutput, null, 2);
-        } catch (error) {
-          alert('Error converting XML to JSON with namespace config: ' + error.message);
-        }
-      });
-      
-      // Namespace JSON to XML conversion
-      document.getElementById('ns-json-to-xml').addEventListener('click', () => {
-        try {
-          const jsonInput = document.getElementById('ns-json-output').value;
-          const jsonObj = JSON.parse(jsonInput);
-          const config = {
-            namespaceAttribute: document.getElementById('namespace-attribute').value,
-            prettyPrint: true
-          };
-          const xmlOutput = XMLJSONTransformer.jsonToXml(jsonObj, config);
-          document.getElementById('ns-xml-input').value = xmlOutput;
-        } catch (error) {
-          alert('Error converting JSON to XML with namespace config: ' + error.message);
-        }
-      });
-      
-      // Reset namespace example
-      document.getElementById('ns-reset').addEventListener('click', () => {
-        document.getElementById('ns-xml-input').value = soapXml;
-        document.getElementById('ns-json-output').value = '';
-      });
-      
-      // Fetch remote XML
-      document.getElementById('fetch-xml').addEventListener('click', async () => {
-        try {
-          const url = document.getElementById('xml-url').value;
-          if (!url) {
-            alert('Please enter a URL');
-            return;
+          const xmlString = elements.xmlInput.value;
+          const xpathExpression = elements.xpathInput.value;
+          
+          if (!xmlString.trim()) {
+            throw new Error('No XML content to evaluate');
           }
           
-          // Display loading message
-          document.getElementById('remote-result').value = 'Loading...';
+          if (!xpathExpression.trim()) {
+            throw new Error('Please enter an XPath expression');
+          }
           
-          // Get namespace configuration
-          const config = {
-            namespaceAttribute: document.getElementById('remote-namespace-attribute').value
-          };
+          // Parse the XML
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
           
-          // Use the fetchXmlAsJson function from the XMLJSONTransformer
-          const jsonResult = await XMLJSONTransformer.fetchXmlAsJson(url, config);
-          document.getElementById('remote-result').value = JSON.stringify(jsonResult, null, 2);
+          // Handle parser errors
+          if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+            throw new Error('XML parsing error');
+          }
+          
+          // Create a namespace resolver for the document
+          const nsResolver = xmlDoc.createNSResolver(xmlDoc.documentElement);
+          
+          // Evaluate the XPath expression
+          const result = xmlDoc.evaluate(xpathExpression, xmlDoc, nsResolver, XPathResult.ANY_TYPE, null);
+          
+          // Process the results based on type
+          let output = '';
+          switch (result.resultType) {
+            case XPathResult.NUMBER_TYPE:
+              output = 'Number result: ' + result.numberValue;
+              break;
+            case XPathResult.STRING_TYPE:
+              output = 'String result: ' + result.stringValue;
+              break;
+            case XPathResult.BOOLEAN_TYPE:
+              output = 'Boolean result: ' + result.booleanValue;
+              break;
+            case XPathResult.UNORDERED_NODE_ITERATOR_TYPE:
+            case XPathResult.ORDERED_NODE_ITERATOR_TYPE:
+              let node;
+              let count = 0;
+              while ((node = result.iterateNext())) {
+                count++;
+                output += `Node ${count}: ${nodeToString(node)}\n\n`;
+              }
+              if (count === 0) {
+                output = 'No nodes matched the expression';
+              }
+              break;
+            default:
+              output = 'Unknown result type';
+          }
+          
+          // Display the results
+          document.getElementById('xpath-result').value = output;
         } catch (error) {
-          document.getElementById('remote-result').value = 'Error: ' + error.message;
+          document.getElementById('xpath-result').value = 'Error: ' + error.message;
+        }
+      });
+      
+      // JSONPath evaluator
+      elements.evaluateJSONPathButton.addEventListener('click', () => {
+        try {
+          const jsonString = elements.jsonOutput.value;
+          const jsonpathExpression = elements.jsonpathInput.value;
+          
+          if (!jsonString.trim()) {
+            throw new Error('No JSON content to evaluate. Convert XML to JSON first.');
+          }
+          
+          if (!jsonpathExpression.trim()) {
+            throw new Error('Please enter a JSONPath expression');
+          }
+          
+          // Parse the JSON
+          const jsonObj = JSON.parse(jsonString);
+          
+          // Simple JSONPath evaluator implementation
+          const result = evaluateJsonPath(jsonObj, jsonpathExpression);
+          
+          // Display the results
+          elements.jsonpathResult.value = JSON.stringify(result, null, 2);
+        } catch (error) {
+          elements.jsonpathResult.value = 'Error: ' + error.message;
         }
       });
       
       // Helper function to get configuration from UI
-      function getCustomConfig() {
+      function getConfig() {
         return {
-          enableNamespaces: document.getElementById('enable-namespaces').checked,
-          enableAttributes: document.getElementById('enable-attributes').checked,
-          enableTextNodes: document.getElementById('enable-text-nodes').checked,
-          enableCData: document.getElementById('enable-cdata').checked,
-          enableComments: document.getElementById('enable-comments').checked,
-          enableProcessingInstructions: document.getElementById('enable-pi').checked,
-          skipEmptyText: document.getElementById('skip-empty-text').checked,
-          prettyPrint: document.getElementById('pretty-print').checked,
-          xmlDeclaration: document.getElementById('xml-declaration').checked,
-          attributesKey: document.getElementById('attributes-key').value,
-          namespacesKey: document.getElementById('namespaces-key').value,
-          textKey: document.getElementById('text-key').value,
-          cdataKey: document.getElementById('cdata-key').value,
-          commentKey: document.getElementById('comment-key').value,
-          processingInstructionKey: document.getElementById('pi-key').value
+          // Features to preserve
+          preserveNamespaces: document.getElementById('preserve-namespaces').checked,
+          preserveComments: document.getElementById('preserve-comments').checked,
+          preservePIs: document.getElementById('preserve-pis').checked,
+          preserveCDATA: document.getElementById('preserve-cdata').checked,
+          preserveTextNodes: document.getElementById('preserve-text-nodes').checked,
+          preserveWhitespace: document.getElementById('preserve-whitespace').checked,
+          
+          // Element name handling
+          stripPrefixes: document.getElementById('strip-prefixes').checked,
+          
+          // Output options
+          outputOptions: {
+            prettyPrint: document.getElementById('pretty-print').checked,
+            indent: parseInt(document.getElementById('indent').value, 10),
+            
+            // JSON-specific options
+            json: {
+              compact: document.getElementById('compact-json').checked,
+              removeEmptyStrings: document.getElementById('remove-empty-strings').checked
+            }
+          },
+          
+          // Property names
+          propNames: {
+            namespace: document.getElementById('namespace-prop').value,
+            value: document.getElementById('value-prop').value,
+            attributes: document.getElementById('attributes-prop').value,
+            cdata: document.getElementById('cdata-prop').value,
+            comments: document.getElementById('comments-prop').value,
+            processing: document.getElementById('processing-prop').value,
+            children: document.getElementById('children-prop').value
+          }
         };
       }
       
-      // Helper function to get namespace configuration
-      function getNamespaceConfig() {
-        return {
-          namespaceAttribute: document.getElementById('namespace-attribute').value,
-          prettyPrint: true
-        };
-      }
-      
-      // Helper function to set up tabs
-      function setupTabs() {
-        const tabButtons = document.querySelectorAll('.tab-button');
+      // Helper function to update current config display
+      function updateCurrentConfig(config) {
+        if (!elements.currentConfigDisplay) return;
         
-        tabButtons.forEach(button => {
-          button.addEventListener('click', () => {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-              tab.classList.remove('active');
-            });
-            
-            // Deactivate all buttons
-            tabButtons.forEach(btn => {
-              btn.classList.remove('active');
-            });
-            
-            // Activate the clicked button
-            button.classList.add('active');
-            
-            // Show the corresponding tab
-            const tabId = button.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
-          });
-        });
+        if (!config) {
+          try {
+            config = new XMLJSONTransformer().config;
+          } catch (error) {
+            console.error('Error creating default config:', error);
+            elements.currentConfigDisplay.textContent = 'Error loading configuration';
+            return;
+          }
+        }
+        elements.currentConfigDisplay.textContent = JSON.stringify(config, null, 2);
       }
+      
+      // Helper function to show errors
+      function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error';
+        errorDiv.textContent = message;
+        document.querySelector('.container').appendChild(errorDiv);
+        
+        // Remove error after 5 seconds
+        setTimeout(() => {
+          errorDiv.remove();
+        }, 5000);
+      }
+      
+      // Utility function to convert a DOM node to string representation
+      function nodeToString(node) {
+        const serializer = new XMLSerializer();
+        let str = '';
+        
+        switch (node.nodeType) {
+          case Node.ELEMENT_NODE:
+            str = serializer.serializeToString(node);
+            break;
+          case Node.TEXT_NODE:
+            str = 'Text: ' + node.textContent;
+            break;
+          case Node.ATTRIBUTE_NODE:
+            str = 'Attribute: ' + node.name + '="' + node.value + '"';
+            break;
+          default:
+            str = 'Node type: ' + node.nodeType;
+        }
+        
+        return str;
+      }
+      
+      // Simple JSONPath evaluator
+      function evaluateJsonPath(obj, path) {
+        // Basic implementation of JSONPath
+        // This is a simplified version and doesn't support all JSONPath features
+        
+        // Handle basic JSONPath syntax
+        if (path === ') {
+          return obj;
+        }
+        
+        // Remove leading $ if present
+        if (path.startsWith(')) {
+          path = path.substring(1);
+        }
+        
+        // Handle the case of empty path after removing $
+        if (!path) {
+          return obj;
+        }
+        
+        // Handle simple dot notation first segment ($.store or $['store'])
+        if (path.startsWith('.') || path.startsWith('[')) {
+          try {
+            // Support for basic segments like .store, ['store'], [0]
+            const segments = parseJsonPathSegments(path);
+            
+            // Follow the path segments
+            let current = obj;
+            for (const segment of segments) {
+              if (current === undefined || current === null) {
+                return null;
+              }
+              
+              // Handle wildcards and recursive descent
+              if (segment === '*') {
+                // Return all values in an array or object
+                if (Array.isArray(current)) {
+                  return current;
+                } else if (typeof current === 'object') {
+                  return Object.values(current);
+                }
+                return null;
+              } else if (segment === '..') {
+                // Deep scanning (recursive descent)
+                // Not fully implemented in this simple version
+                return 'Deep scanning is not fully implemented in this demo';
+              } else {
+                // Regular property or index access
+                current = current[segment];
+              }
+            }
+            
+            return current;
+          } catch (error) {
+            return `Error parsing path: ${error.message}`;
+          }
+        }
+        
+        return `Unsupported JSONPath syntax: ${path}`;
+      }
+      
+      // Helper function to parse JSONPath segments
+      function parseJsonPathSegments(path) {
+        const segments = [];
+        let currentSegment = '';
+        let inBracket = false;
+        let inQuote = false;
+        let quoteChar = '';
+        
+        for (let i = 0; i < path.length; i++) {
+          const char = path[i];
+          
+          if (char === '[' && !inQuote) {
+            inBracket = true;
+            if (currentSegment) {
+              segments.push(currentSegment);
+              currentSegment = '';
+            }
+          } 
+          else if (char === ']' && !inQuote) {
+            inBracket = false;
+            if (currentSegment) {
+              // Check if it's a numeric index
+              if (/^\d+$/.test(currentSegment)) {
+                segments.push(parseInt(currentSegment, 10));
+              } else {
+                // Remove quotes if present
+                if ((currentSegment.startsWith("'") && currentSegment.endsWith("'")) || 
+                    (currentSegment.startsWith('"') && currentSegment.endsWith('"'))) {
+                  currentSegment = currentSegment.substring(1, currentSegment.length - 1);
+                }
+                segments.push(currentSegment);
+              }
+              currentSegment = '';
+            }
+          } 
+          else if ((char === "'" || char === '"') && inBracket) {
+            if (!inQuote) {
+              inQuote = true;
+              quoteChar = char;
+            } else if (char === quoteChar) {
+              inQuote = false;
+            } else {
+              currentSegment += char;
+            }
+          } 
+          else if (char === '.' && !inBracket && !inQuote) {
+            if (currentSegment) {
+              segments.push(currentSegment);
+              currentSegment = '';
+            }
+          } 
+          else {
+            // Skip the dot in dot notation at the beginning
+            if (!(char === '.' && i === 0)) {
+              currentSegment += char;
+            }
+          }
+        }
+        
+        // Add the last segment if any
+        if (currentSegment) {
+          segments.push(currentSegment);
+        }
+        
+        return segments;
+      }
+      
+      // Function to attempt loading external samples
+      async function loadExternalSamples() {
+        try {
+          const response = await fetch('samples/index.json');
+          if (!response.ok) {
+            console.log('No external samples found');
+            return;
+          }
+          
+          const sampleIndex = await response.json();
+          const selector = document.getElementById('sample-selector');
+          
+          // Add external samples
+          if (sampleIndex.samples && Array.isArray(sampleIndex.samples)) {
+            for (const sample of sampleIndex.samples) {
+              if (sample.id && sample.name) {
+                const option = document.createElement('option');
+                option.value = `external:${sample.id}`;
+                option.textContent = sample.name;
+                selector.appendChild(option);
+              }
+            }
+            
+            // Add handler for external samples
+            selector.addEventListener('change', async (event) => {
+              const selectedValue = event.target.value;
+              
+              if (selectedValue && selectedValue.startsWith('external:')) {
+                const sampleId = selectedValue.split(':')[1];
+                try {
+                  const sampleResponse = await fetch(`samples/${sampleId}.xml`);
+                  if (!sampleResponse.ok) {
+                    throw new Error(`Failed to load sample ${sampleId}`);
+                  }
+                  
+                  const sampleXml = await sampleResponse.text();
+                  document.getElementById('xml-input').value = sampleXml;
+                  document.getElementById('json-output').value = '';
+                } catch (error) {
+                  showError(`Error loading external sample: ${error.message}`);
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.log('Error loading external samples:', error);
+          // Silently fail - user can still use built-in samples
+        }
+      }
+      
+      // Try to load external samples
+      loadExternalSamples();
     });
   </script>
 </body>
