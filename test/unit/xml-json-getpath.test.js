@@ -361,10 +361,12 @@ describe("XMLJSONTransformer.getPath", () => {
     };
     
     // Access properties of an empty JSON structure
+    // Direct access to an empty array property should return that empty array
     const children = transformer.getPath(emptyJSON, "root.@children");
     expect(children).toEqual([]);
     
     // Access non-existent child elements
+    // With the simplified implementation, this should return an empty array
     const nonExistent = transformer.getPath(emptyJSON, "root.@children.element");
     expect(nonExistent).toEqual([]);
   });

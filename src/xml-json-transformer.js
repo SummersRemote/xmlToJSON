@@ -923,6 +923,8 @@ export class XMLJSONTransformer {
   // if you need more expressive searching or filtering, use jsonpath
   // Fix for the getPath method
   // Improved getPath method with better error handling
+  // Improved getPath method with better error handling
+  // Simplified getPath method that always returns empty arrays as-is
   getPath(obj, path, fallback = undefined) {
     if (!obj || !path) return fallback;
 
@@ -947,7 +949,10 @@ export class XMLJSONTransformer {
       if (val !== undefined) {
         if (Array.isArray(val)) {
           if (index !== undefined) {
-            return traverse(val[Number(index)], rest);
+            const indexValue = val[Number(index)];
+            return indexValue !== undefined
+              ? traverse(indexValue, rest)
+              : fallback;
           } else {
             return val.map((child) => traverse(child, rest));
           }
@@ -967,8 +972,12 @@ export class XMLJSONTransformer {
           return item ? traverse(item, rest) : fallback;
         }
 
-        // If no matches are found and we're at the end of our path, return fallback
-        if (matches.length === 0) return fallback;
+        if (matches.length === 0) {
+          // If we're at the end of our path, return an empty array for consistency
+          if (rest.length === 0) return [];
+          // Otherwise return fallback
+          return fallback;
+        }
 
         return matches.map((child) => traverse(child, rest));
       }
@@ -983,10 +992,8 @@ export class XMLJSONTransformer {
       Array.isArray(arr) ? arr.flatMap((el) => deepFlatten(el)) : [arr];
 
     if (Array.isArray(result)) {
-      const flattened = deepFlatten(result).filter((v) => v !== undefined);
-      // Return fallback if the flattened result is empty
-      if (flattened.length === 0) return fallback;
-      return flattened;
+      // Always return the flattened array, even if empty
+      return deepFlatten(result).filter((v) => v !== undefined);
     }
 
     return result;
