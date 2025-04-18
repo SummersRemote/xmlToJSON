@@ -327,9 +327,10 @@
   </div>
 
   <!-- Include the XMLJSONTransformer library -->
-  <script src="../dist/xml-json-transformer.js"></script>
-  
-  <script>
+  <script type="module">
+    import { XMLJSONTransformer } from '../dist/xml-json-transformer.js';
+    const transformer = new XMLJSONTransformer();
+
     // Sample definitions
     const samples = {
       library: {

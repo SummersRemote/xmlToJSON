@@ -1,15 +1,12 @@
 {
   "name": "xmltojson",
   "version": "2.0.0",
-  "description": "Bidirectional transformation between XML and JSON with support for namespaces, mixed content, and special node types",
   "type": "module",
-  "main": "dist/xml-json-transformer.js",
-  "module": "dist/xml-json-transformer.esm.js",
-  "browser": "dist/xml-json-transformer.min.js",
-  "files": [
-    "dist",
-    "src"
-  ],
+  "main": "./dist/xml-json-transformer.js",
+  "exports": {
+    ".": "./dist/xml-json-transformer.js"
+  },
+  "files": ["dist"],
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && rollup -c",

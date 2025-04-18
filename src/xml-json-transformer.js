@@ -44,7 +44,7 @@ export class XMLJSONTransformer {
       preserveWhitespace: false,
 
       // Element name handling
-      stripPrefixes: false, // When true, namespace prefixes are removed from element and attribute names
+      stripPrefixes: true, // When false, namespace prefixes are prefixed to the element names
 
       // Output options
       outputOptions: {
@@ -53,8 +53,8 @@ export class XMLJSONTransformer {
 
         // JSON-specific options
         json: {
-          compact: false, // When true, empty arrays and objects are omitted
-          removeEmptyStrings: false, // When true, properties with empty string values are omitted
+          compact: true, // When true, empty arrays and objects are omitted
+          removeEmptyStrings: true, // When true, properties with empty string values are omitted
         },
 
         // XML-specific options
@@ -615,7 +615,6 @@ export class XMLJSONTransformer {
       element = doc.createElement(elName);
     }
   
-
     // Add attributes
     if (jsonObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(jsonObj[attrsKey])) {
@@ -653,7 +652,7 @@ export class XMLJSONTransformer {
         }
       }
     }
-
+  
     // Check if content is mixed (contains HTML markup)
     const value = jsonObj[valKey];
     if (value && this._containsHtmlMarkup(value)) {
@@ -669,7 +668,7 @@ export class XMLJSONTransformer {
       // For simple text content
       element.textContent = value;
     }
-
+  
     // Only add special nodes and children if not already handling mixed content
     if (!value || !this._containsHtmlMarkup(value)) {
       // Add CDATA sections
@@ -679,7 +678,7 @@ export class XMLJSONTransformer {
           element.appendChild(cdataSection);
         }
       }
-
+  
       // Add comments
       if (this.config.preserveComments && Array.isArray(jsonObj[commentsKey])) {
         for (const commentText of jsonObj[commentsKey]) {
@@ -687,7 +686,7 @@ export class XMLJSONTransformer {
           element.appendChild(comment);
         }
       }
-
+  
       // Add processing instructions
       if (this.config.preserveProcessingInstr && Array.isArray(jsonObj[processingKey])) {
         for (const piText of jsonObj[processingKey]) {
@@ -696,7 +695,7 @@ export class XMLJSONTransformer {
           element.appendChild(pi);
         }
       }
-
+  
       // Process children recursively
       if (Array.isArray(jsonObj[childrenKey])) {
         for (const childObj of jsonObj[childrenKey]) {
@@ -714,10 +713,9 @@ export class XMLJSONTransformer {
         }
       }
     }
-
+  
     return element;
   }
-
   /**
    * Check if a string contains HTML markup
    * @param {string} str - The string to check
