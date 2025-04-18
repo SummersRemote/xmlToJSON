@@ -3,6 +3,30 @@
  * A utility class for transforming between XML and JSON with support for
  * namespaces, attributes, CDATA, comments, and processing instructions.
  */
+
+// Environment detection and setup
+let DOMParser, XMLSerializer, Node, Document, implementation;
+
+if (typeof window === 'undefined') {
+  // Node.js environment - use JSDOM
+  const { JSDOM } = require('jsdom');
+  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>', {
+    contentType: 'text/xml'
+  });
+  
+  DOMParser = dom.window.DOMParser;
+  XMLSerializer = dom.window.XMLSerializer;
+  Node = dom.window.Node;
+  Document = dom.window.Document;
+  implementation = dom.window.document.implementation;
+} else {
+  // Browser environment
+  DOMParser = window.DOMParser;
+  XMLSerializer = window.XMLSerializer;
+  Node = window.Node;
+  Document = window.Document;
+  implementation = document.implementation;
+}
 export class XMLJSONTransformer {
   /**
    * Creates a new XMLJSONTransformer with the specified configuration
