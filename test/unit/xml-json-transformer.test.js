@@ -356,7 +356,7 @@ describe("XMLJSONTransformer", () => {
       const noSpecialNodesTransformer = new XMLJSONTransformer({
         preserveComments: false,
         preserveCDATA: false,
-        preserveProcessingInstructions: false,
+        preserveProcessingInstr: false,
       });
 
       const xml = `

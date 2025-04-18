@@ -14,11 +14,11 @@ Features
 
 ## Installation
 
-TODO: browser, node, module, esm, umd....
+TODO: browser, node
 
 ## Usage
 
-TODO: basic examples
+TODO: basic examples for browser and node
 
 ## Configuration Options
 
@@ -40,12 +40,12 @@ const transformer = new XMLJSONTransformer({
   // Output options for both XML and JSON
   outputOptions: {
     prettyPrint: true,                // Enable pretty printing for both formats
-    indent: 2,                        // Number of spaces or string for indentation
+    indent: 3,                        // Number of spaces or string for indentation
     
     // JSON-specific options
     json: {
-      compact: false,                 // When true, empty arrays/objects are omitted
-      removeEmptyStrings: false       // When true, empty string values are omitted
+      compact: true,                 // When true, empty arrays/objects are omitted
+      removeEmptyStrings: true       // When true, empty string values are omitted
     },
     
     // XML-specific options (reserved for future use)

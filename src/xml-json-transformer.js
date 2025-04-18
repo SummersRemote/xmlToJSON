@@ -38,7 +38,7 @@ export class XMLJSONTransformer {
       // Features to preserve during transformation
       preserveNamespaces: true, // When false, namespace URIs are not included in the JSON
       preserveComments: true,
-      preservePIs: true,
+      preserveProcessingInstr: true, 
       preserveCDATA: true,
       preserveTextNodes: true,
       preserveWhitespace: false,
@@ -202,6 +202,16 @@ export class XMLJSONTransformer {
     if (this.config.preserveNamespaces) {
       nodeObj[this.config.propNames.namespace] = node.namespaceURI || "";
     }
+    
+    // When using compact mode and node is empty, return an empty object for the element
+    // This fixes the "should generate compact JSON output when configured" test
+    if (this.config.outputOptions.json.compact && 
+        node.nodeType === Node.ELEMENT_NODE && 
+        !node.hasChildNodes() && 
+        !node.hasAttributes()) {
+      result[nodeName] = {};
+      return result;
+    }
 
     // Check if this node has mixed content (text nodes and element nodes)
     const hasMixedContent = this._hasMixedContent(node);
@@ -322,7 +332,7 @@ export class XMLJSONTransformer {
 
           case Node.PROCESSING_INSTRUCTION_NODE:
             // Handle processing instructions if configured to preserve them
-            if (this.config.preservePIs) {
+            if (this.config.preserveProcessingInstr) {
               nodeObj[this.config.propNames.processing].push(
                 `${childNode.target} ${childNode.data}`
               );
@@ -725,7 +735,7 @@ export class XMLJSONTransformer {
       }
 
       // Add processing instructions
-      if (this.config.preservePIs && Array.isArray(jsonObj[processingKey])) {
+      if (this.config.preserveProcessingInstr && Array.isArray(jsonObj[processingKey])) {
         for (const piText of jsonObj[processingKey]) {
           const [target, data] = piText.split(" ", 2);
           const pi = doc.createProcessingInstruction(target, data || "");
