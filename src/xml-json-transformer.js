@@ -455,75 +455,63 @@ export class XMLJSONTransformer {
    * @private
    */
   _manageNamespacePrefixes(jsonObj) {
-    // Only do this when stripPrefixes is enabled but preserveNamespaces is true
+    // Only process when preserving namespaces but stripping prefixes
     if (!this.config.stripPrefixes || !this.config.preserveNamespaces) {
       return null;
     }
-
+  
     const nsKey = this.config.propNames.namespace;
     const childrenKey = this.config.propNames.children;
     const attrsKey = this.config.propNames.attributes;
-
+  
     // Map to store namespace URI to prefix mappings
     const nsMap = new Map();
     // Counter for generating unique prefixes
     let prefixCounter = 0;
-
-    // Function to process a node and generate prefixes
-    const processNode = (node, nodeName) => {
+  
+    // Simplified function to collect all unique namespaces
+    const collectNamespaces = (node) => {
       // Check if this node has a namespace
       if (node[nsKey] && node[nsKey] !== "") {
         const nsURI = node[nsKey];
-
-        // If we haven't seen this namespace before, generate a prefix
+        
+        // Generate a prefix if we haven't seen this namespace
         if (!nsMap.has(nsURI)) {
-          // Generate a new prefix (ns1, ns2, etc.)
           const prefix = `ns${++prefixCounter}`;
           nsMap.set(nsURI, prefix);
-
-          // Store the generated prefix on the node for later use
-          node._generatedPrefix = prefix;
-        } else {
-          // Use the existing prefix
-          node._generatedPrefix = nsMap.get(nsURI);
         }
       }
-
+  
       // Process attributes
       if (node[attrsKey]) {
-        for (const [attrName, attrObj] of Object.entries(node[attrsKey])) {
+        for (const attrObj of Object.values(node[attrsKey])) {
           if (attrObj[nsKey] && attrObj[nsKey] !== "") {
             const nsURI = attrObj[nsKey];
-
-            // If we haven't seen this namespace before, generate a prefix
+            
             if (!nsMap.has(nsURI)) {
               const prefix = `ns${++prefixCounter}`;
               nsMap.set(nsURI, prefix);
             }
-
-            // Store the generated prefix on the attribute
-            attrObj._generatedPrefix = nsMap.get(nsURI);
           }
         }
       }
-
+  
       // Process children recursively
       if (Array.isArray(node[childrenKey])) {
         for (const childObj of node[childrenKey]) {
-          for (const [childName, childData] of Object.entries(childObj)) {
-            if (!childName.startsWith("@")) {
-              processNode(childData, childName);
+          for (const childData of Object.values(childObj)) {
+            if (typeof childData === 'object' && childData !== null) {
+              collectNamespaces(childData);
             }
           }
         }
       }
     };
-
-    // Start processing from the root node
+  
+    // Start collection from the root node
     const rootName = Object.keys(jsonObj)[0];
-    processNode(jsonObj[rootName], rootName);
-
-    // Return the namespace map for use in creating the XML
+    collectNamespaces(jsonObj[rootName]);
+  
     return nsMap;
   }
 
@@ -583,87 +571,67 @@ export class XMLJSONTransformer {
     const commentsKey = this.config.propNames.comments;
     const processingKey = this.config.propNames.processing;
     const childrenKey = this.config.propNames.children;
-
+  
     // Create the element (with namespace if provided and preserving namespaces)
     let element;
     const nsURI = jsonObj[nsKey] || "";
-
-    // Check if we need to use a generated prefix (when stripPrefixes is enabled)
-    if (
-      this.config.preserveNamespaces &&
-      nsURI &&
-      this.config.stripPrefixes &&
-      nsMap &&
-      nsMap.has(nsURI)
-    ) {
-      // Get the generated prefix for this namespace
-      const prefix = nsMap.get(nsURI);
-      const qualifiedName = `${prefix}:${elName}`;
-
-      // Create element with the prefixed name
-      try {
-        element = doc.createElementNS(nsURI, qualifiedName);
-
-        // Add namespace declaration if this is the first time using this prefix
-        if (jsonObj._generatedPrefix === prefix) {
+  
+    // Only use namespace prefixing when needed
+    if (this.config.preserveNamespaces && nsURI) {
+      if (this.config.stripPrefixes && nsMap && nsMap.has(nsURI)) {
+        // Use the generated prefix for this namespace
+        const prefix = nsMap.get(nsURI);
+        const qualifiedName = `${prefix}:${elName}`;
+        
+        try {
+          element = doc.createElementNS(nsURI, qualifiedName);
+          
+          // Always declare the namespace on the element using this prefix
           element.setAttributeNS(
             "http://www.w3.org/2000/xmlns/",
             `xmlns:${prefix}`,
             nsURI
           );
+        } catch (error) {
+          console.warn(`Error creating element with namespace: ${error.message}`);
+          element = doc.createElement(elName);
         }
-      } catch (error) {
-        console.warn(`Error creating element with namespace: ${error.message}`);
-        element = doc.createElement(elName);
-      }
-    } else if (nsURI && this.config.preserveNamespaces) {
-      // Use the original namespace approach when prefixes aren't stripped
-      try {
-        element = doc.createElementNS(nsURI, elName);
-
-        // If the element doesn't have a prefix but has a namespace, add a default namespace declaration
-        if (!elName.includes(":") && nsURI) {
-          element.setAttribute("xmlns", nsURI);
+      } else {
+        // Standard namespace handling when not stripping prefixes
+        try {
+          element = doc.createElementNS(nsURI, elName);
+          
+          // Add default namespace declaration if needed
+          if (!elName.includes(":") && nsURI) {
+            element.setAttribute("xmlns", nsURI);
+          }
+        } catch (error) {
+          console.warn(`Error creating element with namespace: ${error.message}`);
+          element = doc.createElement(elName);
         }
-      } catch (error) {
-        console.warn(`Error creating element with namespace: ${error.message}`);
-        element = doc.createElement(elName);
       }
     } else {
       // No namespace or not preserving namespaces
       element = doc.createElement(elName);
     }
+  
 
     // Add attributes
     if (jsonObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(jsonObj[attrsKey])) {
-        // Handle compact format where attributes might not have both value and namespace
-        const attrValue = attrObj[valKey] !== undefined ? attrObj[valKey] : "";
-        const attrNs = attrObj[nsKey];
-
-        // Check if we need to use a generated prefix for this attribute
-        if (
-          attrNs &&
-          this.config.preserveNamespaces &&
-          this.config.stripPrefixes &&
-          nsMap &&
-          nsMap.has(attrNs) &&
-          attrObj._generatedPrefix
-        ) {
-          const prefix = attrObj._generatedPrefix;
+        const attrValue = attrObj[this.config.propNames.value] !== undefined ? 
+                          attrObj[this.config.propNames.value] : "";
+        const attrNs = attrObj[this.config.propNames.namespace];
+        
+        if (attrNs && this.config.preserveNamespaces && this.config.stripPrefixes && nsMap && nsMap.has(attrNs)) {
+          const prefix = nsMap.get(attrNs);
           const qualifiedName = `${prefix}:${attrName}`;
-
+          
           try {
-            // Set the attribute with namespace
             element.setAttributeNS(attrNs, qualifiedName, attrValue);
-
-            // Add namespace declaration if needed
-            if (
-              !element.hasAttributeNS(
-                "http://www.w3.org/2000/xmlns/",
-                `xmlns:${prefix}`
-              )
-            ) {
+            
+            // Add namespace declaration if not already present
+            if (!element.hasAttributeNS("http://www.w3.org/2000/xmlns/", `xmlns:${prefix}`)) {
               element.setAttributeNS(
                 "http://www.w3.org/2000/xmlns/",
                 `xmlns:${prefix}`,
@@ -671,30 +639,16 @@ export class XMLJSONTransformer {
               );
             }
           } catch (error) {
-            console.warn(
-              `Error setting attribute with namespace: ${error.message}`
-            );
             element.setAttribute(attrName, attrValue);
           }
         } else if (attrNs && this.config.preserveNamespaces) {
-          // Use namespace with original attribute name
+          // Standard namespace attribute handling
           try {
-            // If attribute name already contains a prefix, use it
-            if (attrName.includes(":")) {
-              element.setAttributeNS(attrNs, attrName, attrValue);
-            } else {
-              // Otherwise, try to find a suitable prefix for this namespace
-              // For simplicity, just use the attribute name without a prefix
-              element.setAttribute(attrName, attrValue);
-            }
+            element.setAttributeNS(attrNs, attrName, attrValue);
           } catch (error) {
-            console.warn(
-              `Error setting attribute with namespace: ${error.message}`
-            );
             element.setAttribute(attrName, attrValue);
           }
         } else {
-          // No namespace or not preserving namespaces
           element.setAttribute(attrName, attrValue);
         }
       }
