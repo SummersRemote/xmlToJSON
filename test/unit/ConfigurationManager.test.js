@@ -2,7 +2,7 @@
  * Unit tests for the ConfigurationManager class
  */
 
-import ConfigurationManager from '../../src/ConfigurationManager.js';
+import ConfigurationManager from '../../src/components/ConfigurationManager.js';
 
 describe('ConfigurationManager', () => {
   let defaultConfig;

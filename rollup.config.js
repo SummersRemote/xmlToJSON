@@ -67,7 +67,7 @@ export default [
       name: "XMLJSONTransformer",
       banner,
       sourcemap: true,
-      exports: "auto",
+      exports: "named",
     },
     plugins: [
       resolve(),
@@ -88,7 +88,7 @@ export default [
       name: "XMLJSONTransformer",
       banner,
       sourcemap: false,
-      exports: "auto",
+      exports: "named",
     },
     plugins: [
       resolve(),

@@ -1,7 +1,7 @@
 export default {
   testEnvironment: 'jsdom',
   verbose: true,
-  setupFilesAfterEnv: ['./test/customMatchers.js'],
+  setupFilesAfterEnv: ['./test/helpers/customMatchers.js'],
   reporters: [
     'default',
     ['jest-html-reporters', {

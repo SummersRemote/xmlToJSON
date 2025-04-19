@@ -2,9 +2,9 @@
  * Unit tests for the NodeProcessor class
  */
 
-import ConfigurationManager from '../../src/ConfigurationManager.js';
-import NodeProcessor from '../../src/NodeProcessor.js';
-import DOMEnvironment from '../../src/DOMEnvironment.js';
+import ConfigurationManager from '../../src/components/ConfigurationManager.js';
+import NodeProcessor from '../../src/components/NodeProcessor.js';
+import DOMEnvironment from '../../src/components/DOMEnvironment.js';
 
 describe('NodeProcessor', () => {
   let configManager;
