@@ -136,6 +136,8 @@ class XMLToJSONConverter {
   }
 
   /**
+   * processRegularContent
+   *
    * Process regular (non-mixed) content
    * @param {Object} nodeObj - Node object
    * @param {Node} node - DOM node
@@ -146,6 +148,9 @@ class XMLToJSONConverter {
     if (node.nodeValue) {
       // Get the raw value
       let value = node.nodeValue;
+
+      // Strip leading and trailing whitespace and newlines
+      value = value.trim();
 
       // Step 1: Apply transform function if exists
       value = this.nodeProcessor.applyTransform(value, context);
@@ -163,6 +168,9 @@ class XMLToJSONConverter {
     ) {
       // Simple text content case
       let value = node.textContent;
+
+      // Strip leading and trailing whitespace and newlines
+      value = value.trim();
 
       // Step 1: Apply transform function if exists
       value = this.nodeProcessor.applyTransform(value, context);
@@ -263,7 +271,12 @@ class XMLToJSONConverter {
             ) {
               continue;
             }
-            textContent += childNode.textContent;
+
+            // For text nodes, only append non-empty content
+            const nodeText = childNode.textContent;
+            if (nodeText.trim() !== "" || this.config.preserveWhitespace) {
+              textContent += nodeText;
+            }
           }
           break;
 
@@ -298,11 +311,15 @@ class XMLToJSONConverter {
       this.config.preserveTextNodes &&
       !nodeObj[this.config.propNames.value]
     ) {
+      // Trim the accumulated text content if not preserving whitespace
+      if (!this.config.preserveWhitespace) {
+        textContent = textContent.trim();
+      }
+
       // Apply transform if needed
-      nodeObj[this.config.propNames.value] = this.nodeProcessor.applyTransform(
-        textContent,
-        context
-      );
+      textContent = this.nodeProcessor.applyTransform(textContent, context);
+
+      nodeObj[this.config.propNames.value] = textContent;
     }
 
     // Add child nodes if present
