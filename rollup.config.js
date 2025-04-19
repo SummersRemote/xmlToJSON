@@ -21,11 +21,11 @@ const banner = `/*!
  */`;
 
 export default [
-  // Main ESM build (for both browser and Node.js)
+  // Main ESM build
   {
-    input: "src/xml-json-transformer.js",
+    input: "src/index.js",
     output: {
-      file: "./dist/xml-json-transformer.js",
+      file: "./dist/index.js",
       format: "es",
       banner,
       sourcemap: true,
@@ -39,14 +39,14 @@ export default [
       filesize(),
     ],
   },
-  // Minified ESM build (for production use)
+  // Minified ESM version
   {
-    input: "src/xml-json-transformer.js",
+    input: "src/index.js",
     output: {
-      file: "./dist/xml-json-transformer.min.js",
+      file: "./dist/index.min.js",
       format: "es",
       banner,
-      sourcemap: false, // No source map for production
+      sourcemap: false,
     },
     plugins: [
       resolve(),
@@ -54,16 +54,15 @@ export default [
         babelHelpers: "bundled",
         exclude: "node_modules/**",
       }),
-      terser(), // Minification
+      terser(),
       filesize(),
     ],
   },
-  // Browser-specific build (UMD for direct <script> inclusion)
-  // This is mainly for backward compatibility and demo usage
+  // UMD bundle for direct browser usage
   {
-    input: "src/xml-json-transformer.js",
+    input: "src/index.js",
     output: {
-      file: "./dist/xml-json-transformer.umd.js",
+      file: "./dist/xmltojson.umd.js",
       format: "umd",
       name: "XMLJSONTransformer",
       banner,
@@ -80,12 +79,11 @@ export default [
       filesize(),
     ],
   },
-
-  // Minified browser build
+  // Minified UMD bundle
   {
-    input: "src/xml-json-transformer.js",
+    input: "src/index.js",
     output: {
-      file: "./dist/xml-json-transformer.umd.min.js",
+      file: "./dist/xmltojson.umd.min.js",
       format: "umd",
       name: "XMLJSONTransformer",
       banner,
@@ -102,5 +100,5 @@ export default [
       terser(),
       filesize(),
     ],
-  },
+  }
 ];

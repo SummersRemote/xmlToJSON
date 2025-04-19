@@ -2,9 +2,9 @@
   "name": "xmltojson",
   "version": "2.0.0",
   "type": "module",
-  "main": "./dist/xml-json-transformer.js",
+  "main": "./dist/index.js",
   "exports": {
-    ".": "./dist/xml-json-transformer.js"
+    ".": "./dist/index.js"
   },
   "files": ["dist"],
   "scripts": {
