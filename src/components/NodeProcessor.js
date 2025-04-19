@@ -109,69 +109,21 @@ class NodeProcessor {
    * @returns {boolean} - Whether string contains HTML markup
    */
   containsHtmlMarkup(str) {
-    return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
-  }
-
-  /**
-   * Attempt to convert a string value to a boolean
-   * @param {string} value - String value to convert
-   * @returns {boolean|string} - Boolean value if conversion successful, original string otherwise
-   */
-  grokBooleanValue(value) {
-    if (typeof value !== "string") return value;
-
-    const normalized = value.trim().toLowerCase();
-    if (normalized === "true") return true;
-    if (normalized === "false") return false;
-
-    return value;
-  }
-
-  /**
-   * Attempt to convert a string value to a number
-   * @param {string} value - String value to convert
-   * @returns {number|string} - Number value if conversion successful, original string otherwise
-   */
-  grokNumberValue(value) {
-    if (typeof value !== "string") return value;
-
-    // Remove thousands separators and normalize decimal points
-    const normalized = value.trim().replace(/,/g, "");
-
-    // Check if it's a valid number (integer, float, or scientific notation)
-    if (/^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$/.test(normalized)) {
-      const number = parseFloat(normalized);
-
-      // Only return the number if it's not NaN or Infinity
-      if (!isNaN(number) && isFinite(number)) {
-        // Return an integer if there's no decimal part
-        return Number.isInteger(number) ? number : number;
-      }
-    }
-
-    return value;
+    if (typeof str !== "string") return false;
+    const hasMarkup = /<[a-z][\s\S]*>/i.test(str);
+    return hasMarkup;
   }
 
   /**
    * Process a value based on configuration settings
    * @param {string} value - Original value to process
-   * @returns {any} - Processed value (possibly converted to boolean or number)
+   * @returns {any} - Processed value
    */
   processValue(value) {
     if (value === undefined || value === null) return value;
-
-    let processed = value;
-
-    // Apply type conversions if configured
-    if (this.config.grokBoolean) {
-      processed = this.grokBooleanValue(processed);
-    }
-
-    if (this.config.grokNumber && typeof processed === "string") {
-      processed = this.grokNumberValue(processed);
-    }
-
-    return processed;
+    
+    // Simply return the value without type conversions for simplicity
+    return value;
   }
 }
 
