@@ -35,11 +35,11 @@ describe("XMLJSONTransformer", () => {
           "@val": "Hello World",
         },
       };
-      const expected = "<?xmlversion=\"1.0\"encoding=\"UTF-8\"?><root>Hello World</root>";
+      const expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root>Hello World</root>";
 
       const result = transformer.jsonToXML(json);
       // Remove whitespace for comparison
-      expect(result.replace(/\s+/g, "")).toEqual(expected.replace(/\s+/g, ""));
+      expect(result).toNormalizeEqual(expected);
     });
 
     test("should handle empty elements", () => {
@@ -52,7 +52,7 @@ describe("XMLJSONTransformer", () => {
       expect(result).toEqual(expected);
 
       const roundTrip = transformer.jsonToXML(result);
-      expect(roundTrip.replace(/\s+/g, "")).toEqual("<?xmlversion=\"1.0\"encoding=\"UTF-8\"?><empty/>");
+      expect(roundTrip).toNormalizeEqual("<?xml version=\"1.0\" encoding=\"UTF-8\"?><empty/>");
     });
 
     test("should return JSON as string when requested", () => {
@@ -394,7 +394,7 @@ describe("XMLJSONTransformer", () => {
 
   describe("Mixed Content Handling", () => {
     test("should handle simple mixed content in transformation", () => {
-      const xml = "<?xmlversion=\"1.0\"encoding=\"UTF-8\"?><paragraph>This has <bold>mixed</bold> content.</paragraph>";
+      const xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><paragraph>This has <bold>mixed</bold> content.</paragraph>";
 
       const result = transformer.xmlToJSON(xml);
 
