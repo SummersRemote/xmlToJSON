@@ -38,7 +38,7 @@ export class XMLJSONTransformer {
       // Features to preserve during transformation
       preserveNamespaces: true, // When false, namespace URIs are not included in the JSON
       preserveComments: true,
-      preserveProcessingInstr: true, 
+      preserveProcessingInstr: true,
       preserveCDATA: true,
       preserveTextNodes: true,
       preserveWhitespace: false,
@@ -202,13 +202,15 @@ export class XMLJSONTransformer {
     if (this.config.preserveNamespaces) {
       nodeObj[this.config.propNames.namespace] = node.namespaceURI || "";
     }
-    
+
     // When using compact mode and node is empty, return an empty object for the element
     // This fixes the "should generate compact JSON output when configured" test
-    if (this.config.outputOptions.json.compact && 
-        node.nodeType === Node.ELEMENT_NODE && 
-        !node.hasChildNodes() && 
-        !node.hasAttributes()) {
+    if (
+      this.config.outputOptions.json.compact &&
+      node.nodeType === Node.ELEMENT_NODE &&
+      !node.hasChildNodes() &&
+      !node.hasAttributes()
+    ) {
       result[nodeName] = {};
       return result;
     }
@@ -459,35 +461,35 @@ export class XMLJSONTransformer {
     if (!this.config.stripPrefixes || !this.config.preserveNamespaces) {
       return null;
     }
-  
+
     const nsKey = this.config.propNames.namespace;
     const childrenKey = this.config.propNames.children;
     const attrsKey = this.config.propNames.attributes;
-  
+
     // Map to store namespace URI to prefix mappings
     const nsMap = new Map();
     // Counter for generating unique prefixes
     let prefixCounter = 0;
-  
+
     // Simplified function to collect all unique namespaces
     const collectNamespaces = (node) => {
       // Check if this node has a namespace
       if (node[nsKey] && node[nsKey] !== "") {
         const nsURI = node[nsKey];
-        
+
         // Generate a prefix if we haven't seen this namespace
         if (!nsMap.has(nsURI)) {
           const prefix = `ns${++prefixCounter}`;
           nsMap.set(nsURI, prefix);
         }
       }
-  
+
       // Process attributes
       if (node[attrsKey]) {
         for (const attrObj of Object.values(node[attrsKey])) {
           if (attrObj[nsKey] && attrObj[nsKey] !== "") {
             const nsURI = attrObj[nsKey];
-            
+
             if (!nsMap.has(nsURI)) {
               const prefix = `ns${++prefixCounter}`;
               nsMap.set(nsURI, prefix);
@@ -495,23 +497,23 @@ export class XMLJSONTransformer {
           }
         }
       }
-  
+
       // Process children recursively
       if (Array.isArray(node[childrenKey])) {
         for (const childObj of node[childrenKey]) {
           for (const childData of Object.values(childObj)) {
-            if (typeof childData === 'object' && childData !== null) {
+            if (typeof childData === "object" && childData !== null) {
               collectNamespaces(childData);
             }
           }
         }
       }
     };
-  
+
     // Start collection from the root node
     const rootName = Object.keys(jsonObj)[0];
     collectNamespaces(jsonObj[rootName]);
-  
+
     return nsMap;
   }
 
@@ -571,21 +573,21 @@ export class XMLJSONTransformer {
     const commentsKey = this.config.propNames.comments;
     const processingKey = this.config.propNames.processing;
     const childrenKey = this.config.propNames.children;
-  
+
     // Create the element (with namespace if provided and preserving namespaces)
     let element;
     const nsURI = jsonObj[nsKey] || "";
-  
+
     // Only use namespace prefixing when needed
     if (this.config.preserveNamespaces && nsURI) {
       if (this.config.stripPrefixes && nsMap && nsMap.has(nsURI)) {
         // Use the generated prefix for this namespace
         const prefix = nsMap.get(nsURI);
         const qualifiedName = `${prefix}:${elName}`;
-        
+
         try {
           element = doc.createElementNS(nsURI, qualifiedName);
-          
+
           // Always declare the namespace on the element using this prefix
           element.setAttributeNS(
             "http://www.w3.org/2000/xmlns/",
@@ -593,20 +595,24 @@ export class XMLJSONTransformer {
             nsURI
           );
         } catch (error) {
-          console.warn(`Error creating element with namespace: ${error.message}`);
+          console.warn(
+            `Error creating element with namespace: ${error.message}`
+          );
           element = doc.createElement(elName);
         }
       } else {
         // Standard namespace handling when not stripping prefixes
         try {
           element = doc.createElementNS(nsURI, elName);
-          
+
           // Add default namespace declaration if needed
           if (!elName.includes(":") && nsURI) {
             element.setAttribute("xmlns", nsURI);
           }
         } catch (error) {
-          console.warn(`Error creating element with namespace: ${error.message}`);
+          console.warn(
+            `Error creating element with namespace: ${error.message}`
+          );
           element = doc.createElement(elName);
         }
       }
@@ -614,23 +620,36 @@ export class XMLJSONTransformer {
       // No namespace or not preserving namespaces
       element = doc.createElement(elName);
     }
-  
+
     // Add attributes
     if (jsonObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(jsonObj[attrsKey])) {
-        const attrValue = attrObj[this.config.propNames.value] !== undefined ? 
-                          attrObj[this.config.propNames.value] : "";
+        const attrValue =
+          attrObj[this.config.propNames.value] !== undefined
+            ? attrObj[this.config.propNames.value]
+            : "";
         const attrNs = attrObj[this.config.propNames.namespace];
-        
-        if (attrNs && this.config.preserveNamespaces && this.config.stripPrefixes && nsMap && nsMap.has(attrNs)) {
+
+        if (
+          attrNs &&
+          this.config.preserveNamespaces &&
+          this.config.stripPrefixes &&
+          nsMap &&
+          nsMap.has(attrNs)
+        ) {
           const prefix = nsMap.get(attrNs);
           const qualifiedName = `${prefix}:${attrName}`;
-          
+
           try {
             element.setAttributeNS(attrNs, qualifiedName, attrValue);
-            
+
             // Add namespace declaration if not already present
-            if (!element.hasAttributeNS("http://www.w3.org/2000/xmlns/", `xmlns:${prefix}`)) {
+            if (
+              !element.hasAttributeNS(
+                "http://www.w3.org/2000/xmlns/",
+                `xmlns:${prefix}`
+              )
+            ) {
               element.setAttributeNS(
                 "http://www.w3.org/2000/xmlns/",
                 `xmlns:${prefix}`,
@@ -652,7 +671,7 @@ export class XMLJSONTransformer {
         }
       }
     }
-  
+
     // Check if content is mixed (contains HTML markup)
     const value = jsonObj[valKey];
     if (value && this._containsHtmlMarkup(value)) {
@@ -668,7 +687,7 @@ export class XMLJSONTransformer {
       // For simple text content
       element.textContent = value;
     }
-  
+
     // Only add special nodes and children if not already handling mixed content
     if (!value || !this._containsHtmlMarkup(value)) {
       // Add CDATA sections
@@ -678,7 +697,7 @@ export class XMLJSONTransformer {
           element.appendChild(cdataSection);
         }
       }
-  
+
       // Add comments
       if (this.config.preserveComments && Array.isArray(jsonObj[commentsKey])) {
         for (const commentText of jsonObj[commentsKey]) {
@@ -686,16 +705,19 @@ export class XMLJSONTransformer {
           element.appendChild(comment);
         }
       }
-  
+
       // Add processing instructions
-      if (this.config.preserveProcessingInstr && Array.isArray(jsonObj[processingKey])) {
+      if (
+        this.config.preserveProcessingInstr &&
+        Array.isArray(jsonObj[processingKey])
+      ) {
         for (const piText of jsonObj[processingKey]) {
           const [target, data] = piText.split(" ", 2);
           const pi = doc.createProcessingInstruction(target, data || "");
           element.appendChild(pi);
         }
       }
-  
+
       // Process children recursively
       if (Array.isArray(jsonObj[childrenKey])) {
         for (const childObj of jsonObj[childrenKey]) {
@@ -713,7 +735,7 @@ export class XMLJSONTransformer {
         }
       }
     }
-  
+
     return element;
   }
   /**
@@ -772,110 +794,6 @@ export class XMLJSONTransformer {
     }
 
     return result.join("\n");
-  }
-
-  /**
-   * Validate a JSON object against the schema
-   * @param {Object} jsonObj - The JSON object to validate
-   * @returns {boolean} - Whether the JSON object is valid
-   */
-  validateJSON(jsonObj) {
-    // Basic validation
-    try {
-      for (const key in jsonObj) {
-        if (key.startsWith("@")) {
-          return false; // Element names shouldn't start with @
-        }
-
-        const nodeObj = jsonObj[key];
-        const propNames = this.config.propNames;
-
-        // If compact mode is enabled, we don't need to check for required properties
-        if (!this.config.outputOptions.json.compact) {
-          // Check required properties
-          const requiredProps = [
-            propNames.attributes,
-            propNames.cdata,
-            propNames.comments,
-            propNames.processing,
-            propNames.children,
-          ];
-
-          // Value and namespace are not required in compact mode with removeEmptyStrings
-          if (!this.config.outputOptions.json.removeEmptyStrings) {
-            requiredProps.push(propNames.value);
-
-            if (this.config.preserveNamespaces) {
-              requiredProps.push(propNames.namespace);
-            }
-          }
-
-          for (const prop of requiredProps) {
-            if (!(prop in nodeObj)) {
-              return false;
-            }
-          }
-        }
-
-        // Validate attributes if present
-        if (nodeObj[propNames.attributes]) {
-          if (typeof nodeObj[propNames.attributes] !== "object") {
-            return false;
-          }
-
-          for (const attrKey in nodeObj[propNames.attributes]) {
-            const attrObj = nodeObj[propNames.attributes][attrKey];
-
-            // In compact mode, we don't need to check for required properties
-            if (!this.config.outputOptions.json.compact) {
-              if (!attrObj[propNames.value]) {
-                return false;
-              }
-
-              if (
-                this.config.preserveNamespaces &&
-                !attrObj[propNames.namespace]
-              ) {
-                return false;
-              }
-            }
-          }
-        }
-
-        // Validate arrays if present
-        const arrayProps = [
-          propNames.cdata,
-          propNames.comments,
-          propNames.processing,
-          propNames.children,
-        ];
-
-        for (const prop of arrayProps) {
-          if (nodeObj[prop] && !Array.isArray(nodeObj[prop])) {
-            return false;
-          }
-        }
-
-        // Validate children recursively
-        if (nodeObj[propNames.children]) {
-          for (const child of nodeObj[propNames.children]) {
-            for (const childKey in child) {
-              if (childKey.startsWith("@")) {
-                return false;
-              }
-
-              if (!this.validateJSON({ [childKey]: child[childKey] })) {
-                return false;
-              }
-            }
-          }
-        }
-      }
-
-      return true;
-    } catch (error) {
-      return false;
-    }
   }
 
   // helper function for traversing the node children in a json object.
@@ -959,5 +877,174 @@ export class XMLJSONTransformer {
     }
 
     return result;
+  }
+
+  /**
+   * Generates a JSON Schema for the XMLJSONTransformer based on the current configuration
+   * This method can be added to the XMLJSONTransformer class to generate a schema
+   * that matches the current configuration and validation rules
+   */
+  generateJSONSchema() {
+    const propNames = this.config.propNames;
+    const compact = this.config.outputOptions?.json?.compact || false;
+    const removeEmptyStrings =
+      this.config.outputOptions?.json?.removeEmptyStrings || false;
+    const preserveNamespaces = this.config.preserveNamespaces;
+
+    // Determine which properties are required based on the configuration
+    // This should match the logic in validateJSON
+    const requiredProps = [];
+
+    if (!compact) {
+      requiredProps.push(
+        propNames.attributes,
+        propNames.cdata,
+        propNames.comments,
+        propNames.processing,
+        propNames.children
+      );
+
+      if (!removeEmptyStrings) {
+        requiredProps.push(propNames.value);
+
+        if (preserveNamespaces) {
+          requiredProps.push(propNames.namespace);
+        }
+      }
+    }
+
+    // Create schema for element properties
+    const elementProperties = {};
+
+    // Add namespace property if preserving namespaces
+    if (preserveNamespaces) {
+      elementProperties[propNames.namespace] = {
+        description: "Namespace URI of the element",
+        type: "string",
+      };
+    }
+
+    // Add value property
+    elementProperties[propNames.value] = {
+      description:
+        "Text content of the element or raw content for mixed content elements",
+      type: "string",
+    };
+
+    // Add attributes property
+    elementProperties[propNames.attributes] = {
+      description: "Element attributes",
+      type: "object",
+      patternProperties: {
+        "^.*$": {
+          type: "object",
+          properties: {},
+        },
+      },
+    };
+
+    // Add attribute properties based on configuration
+    const attrProperties =
+      elementProperties[propNames.attributes].patternProperties["^.*$"]
+        .properties;
+
+    attrProperties[propNames.value] = {
+      description: "Attribute value",
+      type: "string",
+    };
+
+    if (preserveNamespaces) {
+      attrProperties[propNames.namespace] = {
+        description: "Namespace URI of the attribute",
+        type: "string",
+      };
+    }
+
+    // Set required properties for attributes
+    const requiredAttrProps = [propNames.value];
+    if (preserveNamespaces) {
+      requiredAttrProps.push(propNames.namespace);
+    }
+
+    elementProperties[propNames.attributes].patternProperties["^.*$"].required =
+      requiredAttrProps;
+
+    // Add CDATA property
+    elementProperties[propNames.cdata] = {
+      description: "CDATA sections within the element",
+      type: "array",
+      items: {
+        type: "string",
+      },
+    };
+
+    // Add comments property
+    elementProperties[propNames.comments] = {
+      description: "Comments within the element",
+      type: "array",
+      items: {
+        type: "string",
+      },
+    };
+
+    // Add processing instructions property
+    elementProperties[propNames.processing] = {
+      description: "Processing instructions within the element",
+      type: "array",
+      items: {
+        type: "string",
+      },
+    };
+
+    // Create the recursive child elements schema
+    const childElementSchema = {
+      type: "object",
+      properties: {}, // Will be filled in by the self-reference below
+      required: [],
+    };
+
+    // Add children property
+    elementProperties[propNames.children] = {
+      description: "Child elements",
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        patternProperties: {
+          "^[^@].*$": childElementSchema,
+        },
+      },
+    };
+
+    // Create the final schema object
+    const schema = {
+      $schema: "http://json-schema.org/draft-07/schema#",
+      title: "XMLJSONTransformer Schema",
+      description: "JSON Schema for XML representation in XMLJSONTransformer",
+      type: "object",
+      additionalProperties: false,
+      patternProperties: {
+        "^[^@].*$": {
+          description: "XML element name as property key",
+          type: "object",
+          properties: elementProperties,
+          required: requiredProps,
+        },
+      },
+      allOf: [
+        {
+          description: "Schema requires exactly one XML element as the root",
+          minProperties: 1,
+          maxProperties: 1,
+        },
+      ],
+    };
+
+    // Generate a basic example
+    const example = this._generateSchemaExample();
+
+    schema.examples = [example];
+
+    return schema;
   }
 }
