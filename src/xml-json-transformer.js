@@ -60,7 +60,7 @@ export class XMLJSONTransformer {
 
         // XML-specific options
         xml: {
-          // Reserved for future XML-specific options
+          declaration: true, // When true, include XML declaration
         },
       },
 
@@ -512,16 +512,16 @@ export class XMLJSONTransformer {
   jsonToXML(jsonObj) {
     // Create a new XML document
     const doc = document.implementation.createDocument(null, null, null);
-
+  
     // Process namespace prefixes if needed
     const nsMap = this._manageNamespacePrefixes(jsonObj);
-
+  
     // Process the root element
     const rootElName = Object.keys(jsonObj).find((key) => !key.startsWith("@"));
     if (!rootElName) {
       throw new Error("Invalid JSON: No root element found");
     }
-
+  
     const rootJSON = jsonObj[rootElName];
     const rootEl = this._createElementFromJSON(
       doc,
@@ -530,16 +530,21 @@ export class XMLJSONTransformer {
       nsMap
     );
     doc.appendChild(rootEl);
-
+  
     // Serialize the XML document
     const serializer = new XMLSerializer();
     let xmlString = serializer.serializeToString(doc);
-
+  
+    // Add XML declaration if configured
+    if (this.config.outputOptions.xml.declaration) {
+      xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlString;
+    }
+  
     // Pretty print if configured
     if (this.config.outputOptions.prettyPrint) {
       xmlString = this._prettyPrintXML(xmlString);
     }
-
+  
     return xmlString;
   }
 
@@ -791,7 +796,15 @@ export class XMLJSONTransformer {
    */
   _prettyPrintXML(xmlString) {
     const PADDING = this.xmlIndent;
-
+    
+    // Handle XML declaration separately if present
+    let declaration = "";
+    if (xmlString.startsWith('<?xml')) {
+      const endIndex = xmlString.indexOf('?>') + 2;
+      declaration = xmlString.substring(0, endIndex) + '\n';
+      xmlString = xmlString.substring(endIndex);
+    }
+  
     // Normalize spacing between tags and content
     const tokens = xmlString
       .replace(/>\s*</g, "><") // collapse inter-tag whitespace
@@ -800,13 +813,13 @@ export class XMLJSONTransformer {
       .split("\n") // split into lines
       .map((line) => line.trim())
       .filter((line) => line.length > 0); // remove empty lines
-
+  
     let indentLevel = 0;
     const result = [];
-
+  
     for (let i = 0; i < tokens.length; i++) {
       const line = tokens[i];
-
+  
       const isClosingTag = /^<\/[^>]+>/.test(line);
       const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
       const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
@@ -814,21 +827,22 @@ export class XMLJSONTransformer {
       const isCDATA = /^<!\[CDATA\[.*\]\]>$/.test(line);
       const isProcessingInstruction = /^<\?.*\?>$/.test(line);
       const isTextNode = !line.startsWith("<") && !line.endsWith(">");
-
+  
       if (isClosingTag) {
         indentLevel = Math.max(indentLevel - 1, 0);
       }
-
+  
       const indent = PADDING.repeat(indentLevel);
       result.push(indent + line);
-
+  
       if (isOpeningTag) {
         indentLevel++;
       }
       // other types (self-closing, comments, etc.) do not affect indent level
     }
-
-    return result.join("\n");
+  
+    // Prepend the XML declaration if it was present
+    return declaration + result.join("\n");
   }
 
   _applyTransform(value, context) {
