@@ -881,10 +881,10 @@ export class XMLJSONTransformer {
   _applyTransform(value, context) {
     // Fast path - if no transform function, return original value
     if (!this._hasTransform) return value;
-
+    
     // Apply the transform function
     const result = this.config.transformFunction(value, context);
-
+    
     // If the function returns undefined, keep the original value
     return result !== undefined ? result : value;
   }
@@ -892,13 +892,13 @@ export class XMLJSONTransformer {
   _createTransformContext(node, nodeName, direction) {
     // Only create context if transform function exists
     if (!this._hasTransform) return null;
-
+    
     return {
       nodeName: nodeName,
-      nodeType: node.nodeType,
+      nodeType: node.nodeType || 0,
       namespaceURI: node.namespaceURI || "",
-      attributes: node.attributes,
-      direction: direction,
+      attributes: node.attributes || null,
+      direction: direction
     };
   }
 

@@ -1,4 +1,4 @@
-function normalize(xml) {
+function normalizeSpace(xml) {
     return String(xml)
     .replace(/\s+/g, '')         // collapse all types of whitespace (spaces, tabs, newlines) into a single space
     .trim();                      // trim leading and trailing spaces
@@ -7,8 +7,8 @@ function normalize(xml) {
 expect.extend({
   // Custom matcher to compare normalized XML equality
   toNormalizeEqual(received, expected) {
-    const receivedNormalized = normalize(received);
-    const expectedNormalized = normalize(expected);
+    const receivedNormalized = normalizeSpace(received);
+    const expectedNormalized = normalizeSpace(expected);
 
     const pass = receivedNormalized === expectedNormalized;
 
@@ -31,8 +31,8 @@ expect.extend({
 
   // Custom matcher to check if normalized XML contains another XML
   toNormalizeContain(received, expected) {
-    const receivedNormalized = normalize(received);
-    const expectedNormalized = normalize(expected);
+    const receivedNormalized = normalizeSpace(received);
+    const expectedNormalized = normalizeSpace(expected);
 
     const pass = receivedNormalized.includes(expectedNormalized);
 
