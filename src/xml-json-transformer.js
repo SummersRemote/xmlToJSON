@@ -82,11 +82,6 @@ export class XMLJSONTransformer {
     // Flag for fast path when no transform function is provided
     this._hasTransform = typeof this.config.transformFunction === "function";
 
-    // Ensure backward compatibility for jsonOutput and xmlOutput config
-    if (config.jsonOutput || config.xmlOutput) {
-      this._migrateOldConfig(config);
-    }
-
     // Convert numeric indent to string for XML formatting
     this.xmlIndent =
       typeof this.config.outputOptions.indent === "number"
@@ -97,48 +92,6 @@ export class XMLJSONTransformer {
     this.propNamesReverse = {};
     for (const [key, value] of Object.entries(this.config.propNames)) {
       this.propNamesReverse[value] = key;
-    }
-  }
-
-  /**
-   * Migrate from old config format to new consolidated format
-   * @param {Object} config - Old configuration object
-   * @private
-   */
-  _migrateOldConfig(config) {
-    // Handle jsonOutput configuration
-    if (config.jsonOutput) {
-      this.config.outputOptions.json = {
-        ...this.config.outputOptions.json,
-        ...config.jsonOutput,
-      };
-
-      // Copy prettyPrint and indent if they exist
-      if (config.jsonOutput.prettyPrint !== undefined) {
-        this.config.outputOptions.prettyPrint = config.jsonOutput.prettyPrint;
-      }
-      if (config.jsonOutput.indent !== undefined) {
-        this.config.outputOptions.indent = config.jsonOutput.indent;
-      }
-    }
-
-    // Handle xmlOutput configuration
-    if (config.xmlOutput) {
-      this.config.outputOptions.xml = {
-        ...this.config.outputOptions.xml,
-        ...config.xmlOutput,
-      };
-
-      // Copy prettyPrint and indent if they exist and not already set by jsonOutput
-      if (
-        config.xmlOutput.prettyPrint !== undefined &&
-        !config.jsonOutput?.prettyPrint
-      ) {
-        this.config.outputOptions.prettyPrint = config.xmlOutput.prettyPrint;
-      }
-      if (config.xmlOutput.indent !== undefined && !config.jsonOutput?.indent) {
-        this.config.outputOptions.indent = config.xmlOutput.indent;
-      }
     }
   }
 
