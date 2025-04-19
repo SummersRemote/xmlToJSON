@@ -12,7 +12,7 @@ describe("XMLJSONTransformer type conversion", () => {
     // Create a standard transformer with no type conversion
     transformer = new XMLJSONTransformer();
     
-    // Create a transformer with type conversion enabled
+    // Create a transformer with all type conversions enabled
     typeTransformer = new XMLJSONTransformer({
       outputOptions: {
         json: {
@@ -28,7 +28,16 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should convert true/false strings to boolean values", () => {
       const xml = '<root><trueValue>true</trueValue><falseValue>false</falseValue></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      // Create a transformer with only boolean conversion enabled
+      const boolTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokBooleans: true
+          }
+        }
+      });
+      
+      const result = boolTransformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].trueValue["@val"]).toBe("boolean");
       expect(result.root["@children"][0].trueValue["@val"]).toBe(true);
@@ -39,7 +48,15 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should handle case-insensitive boolean conversion", () => {
       const xml = '<root><value1>TRUE</value1><value2>False</value2></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const boolTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokBooleans: true
+          }
+        }
+      });
+      
+      const result = boolTransformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].value1["@val"]).toBe("boolean");
       expect(result.root["@children"][0].value1["@val"]).toBe(true);
@@ -50,22 +67,39 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should not convert other strings to boolean", () => {
       const xml = '<root><value1>yes</value1><value2>no</value2><value3>1</value3><value4>0</value4></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const boolTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokBooleans: true
+          }
+        }
+      });
+      
+      const result = boolTransformer.xmlToJSON(xml);
       
       // These values should remain strings
       expect(typeof result.root["@children"][0].value1["@val"]).toBe("string");
       expect(result.root["@children"][0].value1["@val"]).toBe("yes");
       expect(typeof result.root["@children"][1].value2["@val"]).toBe("string");
       expect(result.root["@children"][1].value2["@val"]).toBe("no");
-      // These may be converted to numbers due to grokNumbers being enabled
-      expect(typeof result.root["@children"][2].value3["@val"]).toBe("number");
-      expect(typeof result.root["@children"][3].value4["@val"]).toBe("number");
+      expect(typeof result.root["@children"][2].value3["@val"]).toBe("string");
+      expect(result.root["@children"][2].value3["@val"]).toBe("1");
+      expect(typeof result.root["@children"][3].value4["@val"]).toBe("string");
+      expect(result.root["@children"][3].value4["@val"]).toBe("0");
     });
     
     test("should convert boolean attribute values", () => {
       const xml = '<root><item boolAttr1="true" boolAttr2="false" otherAttr="text" /></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const boolTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokBooleans: true
+          }
+        }
+      });
+      
+      const result = boolTransformer.xmlToJSON(xml);
       const item = result.root["@children"][0].item;
       
       expect(typeof item["@attrs"].boolAttr1["@val"]).toBe("boolean");
@@ -75,13 +109,33 @@ describe("XMLJSONTransformer type conversion", () => {
       expect(typeof item["@attrs"].otherAttr["@val"]).toBe("string");
       expect(item["@attrs"].otherAttr["@val"]).toBe("text");
     });
+    
+    test("should not convert boolean values when grokBooleans is disabled", () => {
+      const xml = '<root><trueValue>true</trueValue><falseValue>false</falseValue></root>';
+      
+      // Use default transformer (grokBooleans: false)
+      const result = transformer.xmlToJSON(xml);
+      
+      expect(typeof result.root["@children"][0].trueValue["@val"]).toBe("string");
+      expect(result.root["@children"][0].trueValue["@val"]).toBe("true");
+      expect(typeof result.root["@children"][1].falseValue["@val"]).toBe("string");
+      expect(result.root["@children"][1].falseValue["@val"]).toBe("false");
+    });
   });
   
   describe("Number conversion", () => {
     test("should convert integer strings to numbers", () => {
       const xml = '<root><int1>42</int1><int2>-123</int2><int3>0</int3></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const numTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNumbers: true
+          }
+        }
+      });
+      
+      const result = numTransformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].int1["@val"]).toBe("number");
       expect(result.root["@children"][0].int1["@val"]).toBe(42);
@@ -94,7 +148,15 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should convert floating-point strings to numbers", () => {
       const xml = '<root><float1>3.14159</float1><float2>-0.5</float2><float3>0.0</float3></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const numTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNumbers: true
+          }
+        }
+      });
+      
+      const result = numTransformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].float1["@val"]).toBe("number");
       expect(result.root["@children"][0].float1["@val"]).toBe(3.14159);
@@ -107,7 +169,15 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should convert scientific notation to numbers", () => {
       const xml = '<root><sci1>1.23e-4</sci1><sci2>6.02E23</sci2><sci3>-2.998e8</sci3></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const numTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNumbers: true
+          }
+        }
+      });
+      
+      const result = numTransformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].sci1["@val"]).toBe("number");
       expect(result.root["@children"][0].sci1["@val"]).toBeCloseTo(0.000123);
@@ -120,7 +190,15 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should handle numbers with commas as separators", () => {
       const xml = '<root><num1>1,234</num1><num2>1,234,567</num2><num3>-9,876.54</num3></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const numTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNumbers: true
+          }
+        }
+      });
+      
+      const result = numTransformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].num1["@val"]).toBe("number");
       expect(result.root["@children"][0].num1["@val"]).toBe(1234);
@@ -133,7 +211,15 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should preserve special numeric-looking strings", () => {
       const xml = '<root><zip>02115</zip><phone>555-123-4567</phone><id>AB-12345</id></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const numTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNumbers: true
+          }
+        }
+      });
+      
+      const result = numTransformer.xmlToJSON(xml);
       
       // Leading zero should be preserved as a string
       expect(typeof result.root["@children"][0].zip["@val"]).toBe("string");
@@ -151,7 +237,15 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should convert numeric attribute values", () => {
       const xml = '<root><item numAttr1="42" numAttr2="3.14" numAttr3="1.23e-4" numAttr4="1,234" /></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const numTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNumbers: true
+          }
+        }
+      });
+      
+      const result = numTransformer.xmlToJSON(xml);
       const item = result.root["@children"][0].item;
       
       expect(typeof item["@attrs"].numAttr1["@val"]).toBe("number");
@@ -163,13 +257,33 @@ describe("XMLJSONTransformer type conversion", () => {
       expect(typeof item["@attrs"].numAttr4["@val"]).toBe("number");
       expect(item["@attrs"].numAttr4["@val"]).toBe(1234);
     });
+    
+    test("should not convert number values when grokNumbers is disabled", () => {
+      const xml = '<root><int>42</int><float>3.14</float></root>';
+      
+      // Use default transformer (grokNumbers: false)
+      const result = transformer.xmlToJSON(xml);
+      
+      expect(typeof result.root["@children"][0].int["@val"]).toBe("string");
+      expect(result.root["@children"][0].int["@val"]).toBe("42");
+      expect(typeof result.root["@children"][1].float["@val"]).toBe("string");
+      expect(result.root["@children"][1].float["@val"]).toBe("3.14");
+    });
   });
   
   describe("Null conversion", () => {
-    test("should convert 'null' string to null value", () => {
+    test("should convert 'null' string to null value when grokNull is enabled", () => {
       const xml = '<root><nullValue>null</nullValue><notNull>nil</notNull></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const nullTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNull: true
+          }
+        }
+      });
+      
+      const result = nullTransformer.xmlToJSON(xml);
       
       expect(result.root["@children"][0].nullValue["@val"]).toBe(null);
       expect(typeof result.root["@children"][1].notNull["@val"]).toBe("string");
@@ -179,13 +293,31 @@ describe("XMLJSONTransformer type conversion", () => {
     test("should handle case-insensitive null conversion", () => {
       const xml = '<root><value1>NULL</value1><value2>Null</value2></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const nullTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNull: true
+          }
+        }
+      });
+      
+      const result = nullTransformer.xmlToJSON(xml);
       
       expect(result.root["@children"][0].value1["@val"]).toBe(null);
       expect(result.root["@children"][1].value2["@val"]).toBe(null);
     });
     
-    test("should handle xsi:nil attribute", () => {
+    test("should not convert 'null' string to null when grokNull is disabled", () => {
+      const xml = '<root><nullValue>null</nullValue></root>';
+      
+      // Use default transformer (grokNull: false)
+      const result = transformer.xmlToJSON(xml);
+      
+      expect(typeof result.root["@children"][0].nullValue["@val"]).toBe("string");
+      expect(result.root["@children"][0].nullValue["@val"]).toBe("null");
+    });
+    
+    test("should handle xsi:nil attribute when grokNull is enabled", () => {
       const xml = `
         <root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
           <nilElement xsi:nil="true"></nilElement>
@@ -195,7 +327,15 @@ describe("XMLJSONTransformer type conversion", () => {
         </root>
       `;
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const nullTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNull: true
+          }
+        }
+      });
+      
+      const result = nullTransformer.xmlToJSON(xml);
       
       expect(result.root["@children"][0].nilElement["@val"]).toBe(null);
       expect(result.root["@children"][1].nilElement2["@val"]).toBe(null);
@@ -203,10 +343,40 @@ describe("XMLJSONTransformer type conversion", () => {
       expect(result.root["@children"][3].regular["@val"]).toBe("value");
     });
     
+    test("should handle xsi:nil differently when grokNull is disabled", () => {
+      const xml = `
+        <root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+          <nilElement xsi:nil="true"></nilElement>
+        </root>
+      `;
+      
+      // Use default transformer (grokNull: false)
+      const result = transformer.xmlToJSON(xml);
+      
+      // The nil element should exist
+      expect(result.root["@children"][0].nilElement).toBeDefined();
+      
+      // Check that an xsi:nil attribute exists (may be under nil or xsi:nil depending on prefix handling)
+      const nilAttr = result.root["@children"][0].nilElement["@attrs"]["nil"] || 
+                      result.root["@children"][0].nilElement["@attrs"]["xsi:nil"];
+      expect(nilAttr).toBeDefined();
+      
+      // Check that the value is not null
+      expect(result.root["@children"][0].nilElement["@val"]).not.toBe(null);
+    });
+    
     test("should convert null attribute values", () => {
       const xml = '<root><item nullAttr="null" otherAttr="text" /></root>';
       
-      const result = typeTransformer.xmlToJSON(xml);
+      const nullTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNull: true
+          }
+        }
+      });
+      
+      const result = nullTransformer.xmlToJSON(xml);
       const item = result.root["@children"][0].item;
       
       expect(item["@attrs"].nullAttr["@val"]).toBe(null);
@@ -216,7 +386,7 @@ describe("XMLJSONTransformer type conversion", () => {
   });
   
   describe("Type conversion disabled", () => {
-    test("should keep values as strings when type conversion is disabled", () => {
+    test("should keep values as strings when all type conversions are disabled", () => {
       const xml = `
         <root>
           <boolTrue>true</boolTrue>
@@ -228,6 +398,7 @@ describe("XMLJSONTransformer type conversion", () => {
         </root>
       `;
       
+      // Use default transformer (all conversions disabled)
       const result = transformer.xmlToJSON(xml);
       
       expect(typeof result.root["@children"][0].boolTrue["@val"]).toBe("string");
@@ -282,14 +453,22 @@ describe("XMLJSONTransformer type conversion", () => {
         </root>
       `;
       
+      const nullTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNull: true
+          }
+        }
+      });
+      
       // First convert to JSON with type conversion
-      const jsonObj = typeTransformer.xmlToJSON(xml);
+      const jsonObj = nullTransformer.xmlToJSON(xml);
       
       // Verify nil element has null value
       expect(jsonObj.root["@children"][0].nilElement["@val"]).toBe(null);
       
       // Convert back to XML
-      const newXml = typeTransformer.jsonToXML(jsonObj);
+      const newXml = nullTransformer.jsonToXML(jsonObj);
       
       // Verify the xsi:nil attribute is preserved or recreated
       expect(newXml).toNormalizeContain('xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');
@@ -313,8 +492,16 @@ describe("XMLJSONTransformer type conversion", () => {
         }
       };
       
+      const nullTransformer = new XMLJSONTransformer({
+        outputOptions: {
+          json: {
+            grokNull: true
+          }
+        }
+      });
+      
       // Convert to XML
-      const xml = typeTransformer.jsonToXML(jsonObj);
+      const xml = nullTransformer.jsonToXML(jsonObj);
       
       // Verify the null value is represented with xsi:nil
       expect(xml).toNormalizeContain('xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"');

@@ -42,9 +42,6 @@ export class XMLJSONTransformer {
       preserveCDATA: true,
       preserveTextNodes: true,
       preserveWhitespace: false,
-      grokBooleans: false,
-      grokNumbers: false,
-      grokNull: false, 
       transformFunction: config.transformFunction || null,
 
       // Element name handling
@@ -57,6 +54,9 @@ export class XMLJSONTransformer {
 
         // JSON-specific options
         json: {
+          grokBooleans: false,
+          grokNumbers: false,
+          grokNull: false, 
           compact: true, // When true, empty arrays and objects are omitted
           removeEmptyStrings: true, // When true, properties with empty string values are omitted
         },
@@ -84,6 +84,11 @@ export class XMLJSONTransformer {
 
     // Flag for fast path when no transform function is provided
     this._hasTransform = typeof this.config.transformFunction === "function";
+
+  // Ensure the xml property exists in outputOptions
+  if (!this.config.outputOptions.xml) {
+    this.config.outputOptions.xml = { declaration: true };
+  }
 
     // Convert numeric indent to string for XML formatting
     this.xmlIndent =
