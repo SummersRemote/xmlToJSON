@@ -11,7 +11,7 @@ export { XMLJSONTransformer as default } from './XMLJSONTransformer.js';
 export { default as ConfigurationManager } from './components/ConfigurationManager.js';
 export { default as DOMEnvironment } from './components/DomEnvironment.js';
 export { default as NodeProcessor } from './components/NodeProcessor.js';
-export { default as XMLToJSONConverter } from './XMLToJSONConverter.js';
+export { default as XMLToJSONConverter } from './components/XMLToJSONConverter.js';
 export { default as JSONToXMLConverter } from './components/JSONToXMLConverter.js';
 export { default as PathNavigator } from './components/PathNavigator.js';
 export { default as SchemaGenerator } from './components/SchemaGenerator.js';

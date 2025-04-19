@@ -2,8 +2,8 @@
  * Unit tests for the PathNavigator class
  */
 
-import ConfigurationManager from '../../src/ConfigurationManager.js';
-import PathNavigator from '../../src/PathNavigator.js';
+import ConfigurationManager from '../../src/components/ConfigurationManager.js';
+import PathNavigator from '../../src/components/PathNavigator.js';
 
 describe('PathNavigator', () => {
   let configManager;
