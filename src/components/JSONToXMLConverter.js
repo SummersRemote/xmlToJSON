@@ -1,7 +1,7 @@
 /**
  * JSONToXMLConverter
  *
- * Handles converting JSON to XML
+ * Handles converting JSON to XML with clean namespace handling
  */
 class JSONToXMLConverter {
   /**
@@ -26,24 +26,42 @@ class JSONToXMLConverter {
     // Create a new XML document
     const doc = this.domEnv.createDocument(null, null, null);
 
-    // Process namespace prefixes if needed
-    const nsMap = this.manageNamespacePrefixes(jsonObj);
-
-    // Process the root element
-    const rootElName = Object.keys(jsonObj).find((key) => !key.startsWith("@"));
+    // Get the root element name
+    const rootElName = Object.keys(jsonObj).find(key => !key.startsWith("@"));
     if (!rootElName) {
       throw new Error("Invalid JSON: No root element found");
     }
 
     const rootJSON = jsonObj[rootElName];
-    const rootEl = this.createElementFromJSON(doc, rootElName, rootJSON, nsMap);
-    doc.appendChild(rootEl);
 
-    // Serialize the XML document
+    // Only process namespaces if preserving them
+    if (this.config.preserveNamespaces) {
+      // Pre-scan to identify namespaces and assign prefixes
+      const nsMap = this.scanNamespaces(jsonObj);
+      
+      // Create root element with proper namespace
+      const rootEl = this.createElement(doc, rootElName, rootJSON, nsMap);
+      
+      // Declare all namespaces on the root element
+      this.declareNamespaces(rootEl, nsMap);
+      
+      // Process root element (add attributes, content, and children)
+      this.processElement(doc, rootEl, rootJSON, nsMap, true);
+      
+      // Add root to document
+      doc.appendChild(rootEl);
+    } else {
+      // Simple processing without preserving namespaces
+      const rootEl = this.createSimpleElement(doc, rootElName, rootJSON);
+      this.processSimpleElement(doc, rootEl, rootJSON);
+      doc.appendChild(rootEl);
+    }
+
+    // Serialize to XML
     const serializer = this.domEnv.createSerializer();
     let xmlString = serializer.serializeToString(doc);
 
-    // Add XML declaration if configured
+    // Add XML declaration
     if (this.config.outputOptions.xml.declaration) {
       xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlString;
     }
@@ -57,313 +75,540 @@ class JSONToXMLConverter {
   }
 
   /**
-   * Manage namespace prefixes when converting JSON to XML
-   * @param {Object} jsonObj - JSON object
-   * @returns {Map} - Map of namespace URIs to prefixes
+   * Scan the JSON object to collect all namespaces and assign prefixes
+   * @param {Object} jsonObj - JSON object to scan
+   * @returns {Object} - Namespace mapping information
    */
-  manageNamespacePrefixes(jsonObj) {
-    // Only process when preserving namespaces but stripping prefixes
-    if (!this.config.stripPrefixes || !this.config.preserveNamespaces) {
-      return null;
-    }
-
+  scanNamespaces(jsonObj) {
     const nsKey = this.config.propNames.namespace;
     const childrenKey = this.config.propNames.children;
     const attrsKey = this.config.propNames.attributes;
-
-    // Map to store namespace URI to prefix mappings
-    const nsMap = new Map();
-    // Counter for generating unique prefixes
-    let prefixCounter = 0;
-
-    // Simplified function to collect all unique namespaces
-    const collectNamespaces = (node) => {
-      // Check if this node has a namespace
-      if (node[nsKey] && node[nsKey] !== "") {
-        const nsURI = node[nsKey];
-
-        // Generate a prefix if we haven't seen this namespace
-        if (!nsMap.has(nsURI)) {
-          const prefix = `ns${++prefixCounter}`;
-          nsMap.set(nsURI, prefix);
+    
+    // Initialize namespace mapping
+    const nsMap = {
+      // URI to prefix mapping
+      uriToPrefix: new Map(),
+      // Prefix to URI mapping
+      prefixToUri: new Map(),
+      // Original prefixes from element and attribute names
+      originalPrefixes: new Map(),
+      // Track namespace URIs that should be reserved for their original prefixes
+      reservedPrefixes: new Set(),
+      // Next auto-generated prefix number
+      nextPrefixNum: 1
+    };
+    
+    // Helper to extract prefix from name
+    const extractPrefix = (name) => {
+      if (name.includes(':')) {
+        return name.split(':')[0];
+      }
+      return null;
+    };
+    
+    // Initial pass to collect all original prefixes
+    const collectOriginalPrefixes = (name, nodeObj) => {
+      // Check element namespace and prefix
+      const ns = nodeObj[nsKey];
+      if (ns) {
+        const prefix = extractPrefix(name);
+        if (prefix) {
+          // Remember original prefix for this namespace
+          if (!nsMap.originalPrefixes.has(ns)) {
+            nsMap.originalPrefixes.set(ns, prefix);
+            nsMap.reservedPrefixes.add(prefix);
+          }
         }
       }
-
-      // Process attributes
-      if (node[attrsKey]) {
-        for (const attrObj of Object.values(node[attrsKey])) {
-          if (attrObj[nsKey] && attrObj[nsKey] !== "") {
-            const nsURI = attrObj[nsKey];
-
-            if (!nsMap.has(nsURI)) {
-              const prefix = `ns${++prefixCounter}`;
-              nsMap.set(nsURI, prefix);
+      
+      // Check attribute namespaces and prefixes
+      if (nodeObj[attrsKey]) {
+        for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
+          // Skip xmlns attributes
+          if (attrName === 'xmlns' || attrName.startsWith('xmlns:')) {
+            continue;
+          }
+          
+          const attrNs = attrObj[nsKey];
+          if (attrNs) {
+            const prefix = extractPrefix(attrName);
+            if (prefix) {
+              // Remember original prefix for this namespace
+              if (!nsMap.originalPrefixes.has(attrNs)) {
+                nsMap.originalPrefixes.set(attrNs, prefix);
+                nsMap.reservedPrefixes.add(prefix);
+              }
             }
           }
         }
       }
-
+      
       // Process children recursively
-      if (Array.isArray(node[childrenKey])) {
-        for (const childObj of node[childrenKey]) {
-          for (const childData of Object.values(childObj)) {
-            if (typeof childData === "object" && childData !== null) {
-              collectNamespaces(childData);
+      if (Array.isArray(nodeObj[childrenKey])) {
+        for (const childObj of nodeObj[childrenKey]) {
+          for (const [childName, childData] of Object.entries(childObj)) {
+            if (!childName.startsWith('@')) {
+              collectOriginalPrefixes(childName, childData);
             }
           }
         }
       }
     };
-
-    // Start collection from the root node
-    const rootName = Object.keys(jsonObj)[0];
-    collectNamespaces(jsonObj[rootName]);
-
-    return nsMap;
-  }
-
-  /**
-   * Create a DOM element from a JSON object
-   * @param {Document} doc - DOM document
-   * @param {string} elName - Element name
-   * @param {Object} jsonObj - JSON object
-   * @param {Map} nsMap - Namespace URI to prefix map
-   * @returns {Element} - DOM element
-   */
-  createElementFromJSON(doc, elName, jsonObj, nsMap = null) {
-    const propNames = this.config.propNames;
-    const nsKey = propNames.namespace;
-    const valKey = propNames.value;
-    const attrsKey = propNames.attributes;
-    const cdataKey = propNames.cdata;
-    const commentsKey = propNames.comments;
-    const processingKey = propNames.processing;
-    const childrenKey = propNames.children;
-
-    // Create the element (with namespace if provided and preserving namespaces)
-    let element;
-    const nsURI = jsonObj[nsKey] || "";
-
-    // Create context with direction (only if transform function exists)
-    const context = this.nodeProcessor.createTransformContext(
-      { nodeType: this.domEnv.nodeTypes.ELEMENT_NODE, namespaceURI: nsURI },
-      elName,
-      "json-to-xml"
-    );
-
-    // Handle element creation with namespaces
-    element = this.createNamespacedElement(doc, elName, nsURI, nsMap);
-
-    // Add attributes
-    if (jsonObj[attrsKey]) {
-      this.addAttributesToElement(element, jsonObj[attrsKey], context, nsMap);
-    }
-
-    // Handle content
-    this.addContentToElement(element, jsonObj, valKey, context);
-
-    // Only add special nodes and children if not already handling mixed content
-    const contentValue = jsonObj[valKey];
-    if (
-      !contentValue ||
-      !this.nodeProcessor.containsHtmlMarkup(String(contentValue))
-    ) {
-      // Add CDATA sections
-      if (this.config.preserveCDATA && Array.isArray(jsonObj[cdataKey])) {
-        for (const cdataText of jsonObj[cdataKey]) {
-          const cdataSection = doc.createCDATASection(cdataText);
-          element.appendChild(cdataSection);
+    
+    // Second pass to assign all prefixes
+    const assignPrefixes = (name, nodeObj) => {
+      // Process element namespace
+      const ns = nodeObj[nsKey];
+      if (ns && !nsMap.uriToPrefix.has(ns)) {
+        // Use original prefix if available
+        if (nsMap.originalPrefixes.has(ns)) {
+          const prefix = nsMap.originalPrefixes.get(ns);
+          nsMap.uriToPrefix.set(ns, prefix);
+          nsMap.prefixToUri.set(prefix, ns);
+        } else {
+          // Generate new prefix
+          let newPrefix;
+          do {
+            newPrefix = `ns${nsMap.nextPrefixNum++}`;
+          } while (nsMap.reservedPrefixes.has(newPrefix));
+          
+          nsMap.uriToPrefix.set(ns, newPrefix);
+          nsMap.prefixToUri.set(newPrefix, ns);
         }
       }
-
-      // Add comments
-      if (this.config.preserveComments && Array.isArray(jsonObj[commentsKey])) {
-        for (const commentText of jsonObj[commentsKey]) {
-          const comment = doc.createComment(commentText);
-          element.appendChild(comment);
-        }
-      }
-
-      // Add processing instructions
-      if (
-        this.config.preserveProcessingInstr &&
-        Array.isArray(jsonObj[processingKey])
-      ) {
-        for (const piText of jsonObj[processingKey]) {
-          const [target, data] = piText.split(" ", 2);
-          const pi = doc.createProcessingInstruction(target, data || "");
-          element.appendChild(pi);
-        }
-      }
-
-      // Process children recursively
-      if (Array.isArray(jsonObj[childrenKey])) {
-        for (const childObj of jsonObj[childrenKey]) {
-          for (const [childName, childData] of Object.entries(childObj)) {
-            if (!childName.startsWith("@")) {
-              const childElement = this.createElementFromJSON(
-                doc,
-                childName,
-                childData,
-                nsMap
-              );
-              element.appendChild(childElement);
+      
+      // Process attribute namespaces
+      if (nodeObj[attrsKey]) {
+        for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
+          // Skip xmlns attributes
+          if (attrName === 'xmlns' || attrName.startsWith('xmlns:')) {
+            if (attrName.startsWith('xmlns:')) {
+              // Extract declared prefix and namespace
+              const declaredPrefix = attrName.substring(6);
+              const declaredNs = attrObj[this.config.propNames.value];
+              
+              if (declaredPrefix && declaredNs) {
+                nsMap.reservedPrefixes.add(declaredPrefix);
+                if (!nsMap.originalPrefixes.has(declaredNs)) {
+                  nsMap.originalPrefixes.set(declaredNs, declaredPrefix);
+                }
+              }
+            }
+            continue;
+          }
+          
+          const attrNs = attrObj[nsKey];
+          if (attrNs && !nsMap.uriToPrefix.has(attrNs)) {
+            // Use original prefix if available
+            if (nsMap.originalPrefixes.has(attrNs)) {
+              const prefix = nsMap.originalPrefixes.get(attrNs);
+              nsMap.uriToPrefix.set(attrNs, prefix);
+              nsMap.prefixToUri.set(prefix, attrNs);
+            } else {
+              // Generate new prefix
+              let newPrefix;
+              do {
+                newPrefix = `ns${nsMap.nextPrefixNum++}`;
+              } while (nsMap.reservedPrefixes.has(newPrefix));
+              
+              nsMap.uriToPrefix.set(attrNs, newPrefix);
+              nsMap.prefixToUri.set(newPrefix, attrNs);
             }
           }
         }
       }
-    }
-
-    return element;
-  }
-
-  /**
-   * Create a namespaced element
-   * @param {Document} doc - DOM document
-   * @param {string} elName - Element name
-   * @param {string} nsURI - Namespace URI
-   * @param {Map} nsMap - Namespace URI to prefix map
-   * @returns {Element} - DOM element
-   */
-  createNamespacedElement(doc, elName, nsURI, nsMap) {
-    let element;
-
-    // Only use namespace prefixing when needed
-    if (this.config.preserveNamespaces && nsURI) {
-      if (this.config.stripPrefixes && nsMap && nsMap.has(nsURI)) {
-        // Use the generated prefix for this namespace
-        const prefix = nsMap.get(nsURI);
-        const qualifiedName = `${prefix}:${elName}`;
-
-        try {
-          element = doc.createElementNS(nsURI, qualifiedName);
-
-          // Always declare the namespace on the element using this prefix
-          element.setAttributeNS(
-            "http://www.w3.org/2000/xmlns/",
-            `xmlns:${prefix}`,
-            nsURI
-          );
-        } catch (error) {
-          console.warn(
-            `Error creating element with namespace: ${error.message}`
-          );
-          element = doc.createElement(elName);
-        }
-      } else {
-        // Standard namespace handling when not stripping prefixes
-        try {
-          element = doc.createElementNS(nsURI, elName);
-
-          // Add default namespace declaration if needed
-          if (!elName.includes(":") && nsURI) {
-            element.setAttribute("xmlns", nsURI);
+      
+      // Process children recursively
+      if (Array.isArray(nodeObj[childrenKey])) {
+        for (const childObj of nodeObj[childrenKey]) {
+          for (const [childName, childData] of Object.entries(childObj)) {
+            if (!childName.startsWith('@')) {
+              assignPrefixes(childName, childData);
+            }
           }
-        } catch (error) {
-          console.warn(
-            `Error creating element with namespace: ${error.message}`
-          );
-          element = doc.createElement(elName);
         }
       }
-    } else {
-      // No namespace or not preserving namespaces
-      element = doc.createElement(elName);
-    }
-
-    return element;
+    };
+    
+    // Start with the root element
+    const rootName = Object.keys(jsonObj)[0];
+    const rootObj = jsonObj[rootName];
+    
+    // First collect original prefixes
+    collectOriginalPrefixes(rootName, rootObj);
+    
+    // Then assign prefixes to all namespaces
+    assignPrefixes(rootName, rootObj);
+    
+    return nsMap;
   }
 
   /**
-   * Add attributes to an element
-   * @param {Element} element - DOM element
-   * @param {Object} attributes - Attributes object
-   * @param {Object} context - Transform context
-   * @param {Map} nsMap - Namespace URI to prefix map
+   * Declare all namespaces on the root element
+   * @param {Element} rootEl - Root element
+   * @param {Object} nsMap - Namespace mapping
    */
-  addAttributesToElement(element, attributes, context, nsMap) {
-    for (const [attrName, attrObj] of Object.entries(attributes)) {
-      // Apply transform to attribute value if needed
-      const originalAttrValue = attrObj[this.config.propNames.value];
-      let attrValue =
-        this.nodeProcessor.applyTransform(originalAttrValue, {
+  declareNamespaces(rootEl, nsMap) {
+    // Add all namespace declarations to root
+    for (const [uri, prefix] of nsMap.uriToPrefix.entries()) {
+      if (uri && prefix) {
+        rootEl.setAttributeNS('http://www.w3.org/2000/xmlns/', `xmlns:${prefix}`, uri);
+      }
+    }
+  }
+
+  /**
+   * Create an element with proper namespace
+   * @param {Document} doc - DOM document
+   * @param {string} name - Element name
+   * @param {Object} nodeObj - Element JSON object
+   * @param {Object} nsMap - Namespace mapping
+   * @returns {Element} - Created element
+   */
+  createElement(doc, name, nodeObj, nsMap) {
+    const nsUri = nodeObj[this.config.propNames.namespace] || '';
+    
+    // Handle element with namespace
+    if (nsUri) {
+      // Get local name (without prefix)
+      const localName = name.includes(':') ? name.split(':')[1] : name;
+      
+      // Get assigned prefix for this namespace
+      const prefix = nsMap.uriToPrefix.get(nsUri);
+      
+      if (prefix) {
+        // Create with namespace and assigned prefix
+        try {
+          return doc.createElementNS(nsUri, `${prefix}:${localName}`);
+        } catch (e) {
+          console.warn(`Error creating element with namespace: ${e.message}`);
+          return doc.createElement(localName);
+        }
+      } else {
+        // No prefix assigned (should not happen)
+        return doc.createElement(localName);
+      }
+    }
+    
+    // No namespace - create simple element
+    const localName = name.includes(':') ? name.split(':')[1] : name;
+    return doc.createElement(localName);
+  }
+
+  /**
+   * Create an element without namespace handling
+   * @param {Document} doc - DOM document
+   * @param {string} name - Element name
+   * @param {Object} nodeObj - Element JSON object
+   * @returns {Element} - Created element
+   */
+  createSimpleElement(doc, name, nodeObj) {
+    // Strip prefix if configured
+    if (this.config.stripPrefixes && name.includes(':')) {
+      return doc.createElement(name.split(':')[1]);
+    }
+    return doc.createElement(name);
+  }
+
+  /**
+   * Process an element with namespace support
+   * @param {Document} doc - DOM document
+   * @param {Element} element - Element to process
+   * @param {Object} nodeObj - Element JSON object
+   * @param {Object} nsMap - Namespace mapping
+   * @param {boolean} isRoot - Whether this is the root element
+   */
+  processElement(doc, element, nodeObj, nsMap, isRoot = false) {
+    const nsKey = this.config.propNames.namespace;
+    const valKey = this.config.propNames.value;
+    const attrsKey = this.config.propNames.attributes;
+    const cdataKey = this.config.propNames.cdata;
+    const commentsKey = this.config.propNames.comments;
+    const processingKey = this.config.propNames.processing;
+    const childrenKey = this.config.propNames.children;
+    
+    // Create transform context
+    const context = this.nodeProcessor.createTransformContext(
+      {
+        nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
+        namespaceURI: nodeObj[nsKey] || ""
+      },
+      element.nodeName,
+      "json-to-xml"
+    );
+    
+    // Add attributes (skip xmlns attributes unless this is the root)
+    if (nodeObj[attrsKey]) {
+      // Process attributes
+      for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
+        // Skip xmlns attributes except at root
+        if ((attrName === 'xmlns' || attrName.startsWith('xmlns:')) && !isRoot) {
+          continue;
+        }
+        
+        // Get attribute value
+        const attrVal = attrObj[valKey];
+        if (attrVal === undefined) {
+          continue;
+        }
+        
+        // Convert to string if needed
+        const strVal = typeof attrVal === 'boolean' || typeof attrVal === 'number'
+          ? String(attrVal)
+          : attrVal;
+        
+        // Apply transform if configured
+        const transformedVal = this.nodeProcessor.applyTransform(strVal, {
           ...context,
           nodeName: attrName,
           nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
-          isAttribute: true,
-        }) ?? "";
-
-      // Convert boolean and number values to strings for XML attributes
-      if (typeof attrValue === "boolean" || typeof attrValue === "number") {
-        attrValue = String(attrValue);
+          isAttribute: true
+        }) ?? strVal;
+        
+        // Special handling for xmlns attributes on root
+        if (isRoot && (attrName === 'xmlns' || attrName.startsWith('xmlns:'))) {
+          element.setAttribute(attrName, transformedVal);
+          continue;
+        }
+        
+        // Process attribute namespace
+        const attrNs = attrObj[nsKey] || '';
+        
+        if (attrNs) {
+          // Get assigned prefix
+          const prefix = nsMap.uriToPrefix.get(attrNs);
+          
+          if (prefix) {
+            // Get local name (without prefix)
+            const localName = attrName.includes(':') ? attrName.split(':')[1] : attrName;
+            
+            try {
+              // Set attribute with namespace and assigned prefix
+              element.setAttributeNS(attrNs, `${prefix}:${localName}`, transformedVal);
+            } catch (e) {
+              // Fallback to regular attribute
+              element.setAttribute(localName, transformedVal);
+            }
+          } else {
+            // No prefix assigned (should not happen)
+            element.setAttribute(attrName, transformedVal);
+          }
+        } else {
+          // Regular attribute without namespace
+          element.setAttribute(attrName, transformedVal);
+        }
       }
-
-      const attrNs = attrObj[this.config.propNames.namespace];
-
-      // Rest of the attribute handling code...
-      // (The existing code for handling namespaces and setting attributes)
+    }
+    
+    // Add content
+    const content = nodeObj[valKey];
+    if (content !== undefined && content !== null) {
+      // Format content
+      const strContent = typeof content === 'boolean' || typeof content === 'number'
+        ? String(content)
+        : content;
+      
+      // Apply transform if configured
+      const transformedContent = this.nodeProcessor.applyTransform(strContent, context) ?? strContent;
+      
+      // Add content to element
+      if (typeof transformedContent === 'string') {
+        if (this.nodeProcessor.containsHtmlMarkup(transformedContent)) {
+          // Mixed content
+          if (typeof element.innerHTML !== 'undefined') {
+            element.innerHTML = transformedContent;
+          } else {
+            element.textContent = transformedContent;
+          }
+        } else {
+          // Simple text
+          element.textContent = transformedContent;
+        }
+      }
+    }
+    
+    // Skip child processing if this is mixed content
+    if (content && this.nodeProcessor.containsHtmlMarkup(String(content))) {
+      return;
+    }
+    
+    // Add CDATA sections if preserving them
+    if (this.config.preserveCDATA && Array.isArray(nodeObj[cdataKey])) {
+      for (const cdataText of nodeObj[cdataKey]) {
+        const cdataSection = doc.createCDATASection(cdataText);
+        element.appendChild(cdataSection);
+      }
+    }
+    
+    // Add comments if preserving them
+    if (this.config.preserveComments && Array.isArray(nodeObj[commentsKey])) {
+      for (const commentText of nodeObj[commentsKey]) {
+        const comment = doc.createComment(commentText);
+        element.appendChild(comment);
+      }
+    }
+    
+    // Add processing instructions if preserving them
+    if (this.config.preserveProcessingInstr && Array.isArray(nodeObj[processingKey])) {
+      for (const piText of nodeObj[processingKey]) {
+        const [target, data] = piText.split(' ', 2);
+        const pi = doc.createProcessingInstruction(target, data || '');
+        element.appendChild(pi);
+      }
+    }
+    
+    // Process children
+    if (Array.isArray(nodeObj[childrenKey])) {
+      for (const childObj of nodeObj[childrenKey]) {
+        for (const [childName, childData] of Object.entries(childObj)) {
+          if (!childName.startsWith('@')) {
+            // Create child with namespace
+            const childEl = this.createElement(doc, childName, childData, nsMap);
+            
+            // Process child element
+            this.processElement(doc, childEl, childData, nsMap, false);
+            
+            // Add to parent
+            element.appendChild(childEl);
+          }
+        }
+      }
     }
   }
 
   /**
-   * Add content to an element
-   * @param {Element} element - DOM element
-   * @param {Object} jsonObj - JSON object
-   * @param {string} valKey - Value property key
-   * @param {Object} context - Transform context
+   * Process an element without namespace support
+   * @param {Document} doc - DOM document
+   * @param {Element} element - Element to process
+   * @param {Object} nodeObj - Element JSON object
    */
-  addContentToElement(element, jsonObj, node, valKey, context) {
-    // Check if content is mixed (contains HTML markup)
-    const originalValue = jsonObj[valKey];
-
-    // Apply transform function if exists
-    const transformedValue = this.nodeProcessor.applyTransform(
-      originalValue,
-      context
+  processSimpleElement(doc, element, nodeObj) {
+    const valKey = this.config.propNames.value;
+    const attrsKey = this.config.propNames.attributes;
+    const cdataKey = this.config.propNames.cdata;
+    const commentsKey = this.config.propNames.comments;
+    const processingKey = this.config.propNames.processing;
+    const childrenKey = this.config.propNames.children;
+    
+    // Create transform context
+    const context = this.nodeProcessor.createTransformContext(
+      {
+        nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
+        namespaceURI: ""
+      },
+      element.nodeName,
+      "json-to-xml"
     );
-
-    // Handle special cases from transform function
-    if (context && context.isNull) {
-      // Add xsi:nil="true" attribute for null values
-      element.setAttributeNS(
-        "http://www.w3.org/2000/xmlns/",
-        "xmlns:xsi",
-        "http://www.w3.org/2001/XMLSchema-instance"
-      );
-      element.setAttributeNS(
-        "http://www.w3.org/2001/XMLSchema-instance",
-        "xsi:nil",
-        "true"
-      );
-    }
-
-    // Use the transformed value if available, otherwise use original
-    let contentValue =
-      transformedValue !== undefined ? transformedValue : originalValue;
-
-    // Convert boolean and number values to strings for XML
-    if (contentValue !== undefined) {
-      if (
-        typeof contentValue === "boolean" ||
-        typeof contentValue === "number"
-      ) {
-        contentValue = String(contentValue);
-      }
-
-      if (
-        typeof contentValue === "string" &&
-        this.nodeProcessor.containsHtmlMarkup(contentValue)
-      ) {
-        // For mixed content, set innerHTML
-        if (typeof element.innerHTML !== "undefined") {
-          element.innerHTML = contentValue;
-        } else {
-          // Fallback for environments without innerHTML
-          element.textContent = contentValue;
+    
+    // Add attributes (without namespace handling)
+    if (nodeObj[attrsKey]) {
+      for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
+        // Skip xmlns attributes
+        if (attrName === 'xmlns' || attrName.startsWith('xmlns:')) {
+          continue;
         }
-      } else if (contentValue !== undefined) {
-        // For simple text content
-        element.textContent = String(contentValue);
+        
+        // Get attribute value
+        const attrVal = attrObj[valKey];
+        if (attrVal === undefined) {
+          continue;
+        }
+        
+        // Convert to string if needed
+        const strVal = typeof attrVal === 'boolean' || typeof attrVal === 'number'
+          ? String(attrVal)
+          : attrVal;
+        
+        // Apply transform if configured
+        const transformedVal = this.nodeProcessor.applyTransform(strVal, {
+          ...context,
+          nodeName: attrName,
+          nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
+          isAttribute: true
+        }) ?? strVal;
+        
+        // Strip prefix if configured
+        const processedName = this.config.stripPrefixes && attrName.includes(':')
+          ? attrName.split(':')[1]
+          : attrName;
+        
+        // Add attribute
+        element.setAttribute(processedName, transformedVal);
+      }
+    }
+    
+    // Add content
+    const content = nodeObj[valKey];
+    if (content !== undefined && content !== null) {
+      // Format content
+      const strContent = typeof content === 'boolean' || typeof content === 'number'
+        ? String(content)
+        : content;
+      
+      // Apply transform if configured
+      const transformedContent = this.nodeProcessor.applyTransform(strContent, context) ?? strContent;
+      
+      // Add content to element
+      if (typeof transformedContent === 'string') {
+        if (this.nodeProcessor.containsHtmlMarkup(transformedContent)) {
+          // Mixed content
+          if (typeof element.innerHTML !== 'undefined') {
+            element.innerHTML = transformedContent;
+          } else {
+            element.textContent = transformedContent;
+          }
+        } else {
+          // Simple text
+          element.textContent = transformedContent;
+        }
+      }
+    }
+    
+    // Skip child processing if this is mixed content
+    if (content && this.nodeProcessor.containsHtmlMarkup(String(content))) {
+      return;
+    }
+    
+    // Add CDATA sections if preserving them
+    if (this.config.preserveCDATA && Array.isArray(nodeObj[cdataKey])) {
+      for (const cdataText of nodeObj[cdataKey]) {
+        const cdataSection = doc.createCDATASection(cdataText);
+        element.appendChild(cdataSection);
+      }
+    }
+    
+    // Add comments if preserving them
+    if (this.config.preserveComments && Array.isArray(nodeObj[commentsKey])) {
+      for (const commentText of nodeObj[commentsKey]) {
+        const comment = doc.createComment(commentText);
+        element.appendChild(comment);
+      }
+    }
+    
+    // Add processing instructions if preserving them
+    if (this.config.preserveProcessingInstr && Array.isArray(nodeObj[processingKey])) {
+      for (const piText of nodeObj[processingKey]) {
+        const [target, data] = piText.split(' ', 2);
+        const pi = doc.createProcessingInstruction(target, data || '');
+        element.appendChild(pi);
+      }
+    }
+    
+    // Process children
+    if (Array.isArray(nodeObj[childrenKey])) {
+      for (const childObj of nodeObj[childrenKey]) {
+        for (const [childName, childData] of Object.entries(childObj)) {
+          if (!childName.startsWith('@')) {
+            // Create child without namespace
+            const childEl = this.createSimpleElement(doc, childName, childData);
+            
+            // Process child element
+            this.processSimpleElement(doc, childEl, childData);
+            
+            // Add to parent
+            element.appendChild(childEl);
+          }
+        }
       }
     }
   }
@@ -374,7 +619,9 @@ class JSONToXMLConverter {
    * @returns {string} - Formatted XML string
    */
   prettyPrintXML(xmlString) {
-    const PADDING = this.configManager.xmlIndent;
+    const PADDING = typeof this.config.outputOptions.indent === 'number'
+      ? ' '.repeat(this.config.outputOptions.indent)
+      : '  ';
 
     // Handle XML declaration separately if present
     let declaration = "";
@@ -402,10 +649,6 @@ class JSONToXMLConverter {
       const isClosingTag = /^<\/[^>]+>/.test(line);
       const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
       const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
-      const isComment = /^<!--.*-->$/.test(line);
-      const isCDATA = /^<!\[CDATA\[.*\]\]>$/.test(line);
-      const isProcessingInstruction = /^<\?.*\?>$/.test(line);
-      const isTextNode = !line.startsWith("<") && !line.endsWith(">");
 
       if (isClosingTag) {
         indentLevel = Math.max(indentLevel - 1, 0);
@@ -417,7 +660,6 @@ class JSONToXMLConverter {
       if (isOpeningTag) {
         indentLevel++;
       }
-      // other types (self-closing, comments, etc.) do not affect indent level
     }
 
     // Prepend the XML declaration if it was present
