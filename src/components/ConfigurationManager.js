@@ -39,6 +39,12 @@ class ConfigurationManager {
         preserveCDATA: true,
         preserveTextNodes: true,
         preserveWhitespace: false,
+            
+        // Type conversion options
+        grokBoolean: false,
+        grokNumber: false,
+        
+        // value transform function
         transformFunction: null,
   
         // Element name handling
