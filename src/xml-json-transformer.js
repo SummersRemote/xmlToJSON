@@ -42,6 +42,7 @@ export class XMLJSONTransformer {
       preserveCDATA: true,
       preserveTextNodes: true,
       preserveWhitespace: false,
+      transformFunction: config.transformFunction || null,
 
       // Element name handling
       stripPrefixes: true, // When false, namespace prefixes are prefixed to the element names
@@ -77,6 +78,9 @@ export class XMLJSONTransformer {
       // Override defaults with provided config
       ...config,
     };
+
+    // Flag for fast path when no transform function is provided
+    this._hasTransform = typeof this.config.transformFunction === "function";
 
     // Ensure backward compatibility for jsonOutput and xmlOutput config
     if (config.jsonOutput || config.xmlOutput) {
@@ -198,13 +202,17 @@ export class XMLJSONTransformer {
     const result = {};
     const nodeObj = {};
 
+    // Create context with direction (only if transform function exists)
+    const context = this._hasTransform
+      ? this._createTransformContext(node, nodeName, "xml-to-json")
+      : null;
+
     // Always add namespace when preserving namespaces is enabled
     if (this.config.preserveNamespaces) {
       nodeObj[this.config.propNames.namespace] = node.namespaceURI || "";
     }
 
     // When using compact mode and node is empty, return an empty object for the element
-    // This fixes the "should generate compact JSON output when configured" test
     if (
       this.config.outputOptions.json.compact &&
       node.nodeType === Node.ELEMENT_NODE &&
@@ -220,8 +228,12 @@ export class XMLJSONTransformer {
 
     if (hasMixedContent) {
       // For mixed content, get the serialized inner content as text
-      nodeObj[this.config.propNames.value] =
-        node.innerHTML || this._getInnerHTML(node);
+      const innerContent = node.innerHTML || this._getInnerHTML(node);
+
+      // Apply transform function if exists
+      nodeObj[this.config.propNames.value] = this._hasTransform
+        ? this._applyTransform(innerContent, context)
+        : innerContent;
 
       // Don't process child elements for mixed content
       nodeObj[this.config.propNames.attributes] = {};
@@ -233,14 +245,20 @@ export class XMLJSONTransformer {
       // Handle as regular content
       // Add value if it exists
       if (node.nodeValue) {
-        nodeObj[this.config.propNames.value] = node.nodeValue;
+        const value = this._hasTransform
+          ? this._applyTransform(node.nodeValue, context)
+          : node.nodeValue;
+        nodeObj[this.config.propNames.value] = value;
       } else if (
         node.nodeType === Node.ELEMENT_NODE &&
         node.childNodes.length === 1 &&
         node.childNodes[0].nodeType === Node.TEXT_NODE
       ) {
         // Simple text content case
-        nodeObj[this.config.propNames.value] = node.textContent;
+        const value = this._hasTransform
+          ? this._applyTransform(node.textContent, context)
+          : node.textContent;
+        nodeObj[this.config.propNames.value] = value;
       } else {
         nodeObj[this.config.propNames.value] = "";
       }
@@ -274,9 +292,22 @@ export class XMLJSONTransformer {
 
         const attrObj = {};
 
+        // Apply transform to attribute value if needed
+        const attrValue = this._hasTransform
+          ? this._applyTransform(attr.value, {
+              ...context,
+              nodeName: attrName,
+              nodeType: Node.ATTRIBUTE_NODE,
+              isAttribute: true,
+            })
+          : attr.value;
+
         // Only add value property if not empty or if we're not removing empty strings
-        if (attr.value || !this.config.outputOptions.json.removeEmptyStrings) {
-          attrObj[this.config.propNames.value] = attr.value;
+        if (
+          attrValue !== "" ||
+          !this.config.outputOptions.json.removeEmptyStrings
+        ) {
+          attrObj[this.config.propNames.value] = attrValue;
         }
 
         // Always add namespace if preserving namespaces
@@ -349,7 +380,10 @@ export class XMLJSONTransformer {
         this.config.preserveTextNodes &&
         !nodeObj[this.config.propNames.value]
       ) {
-        nodeObj[this.config.propNames.value] = textContent;
+        // Apply transform if needed
+        nodeObj[this.config.propNames.value] = this._hasTransform
+          ? this._applyTransform(textContent, context)
+          : textContent;
       }
 
       // Add child nodes if present
@@ -578,6 +612,15 @@ export class XMLJSONTransformer {
     let element;
     const nsURI = jsonObj[nsKey] || "";
 
+    // Create context with direction (only if transform function exists)
+    const context = this._hasTransform
+      ? this._createTransformContext(
+          { nodeType: Node.ELEMENT_NODE, namespaceURI: nsURI },
+          elName,
+          "json-to-xml"
+        )
+      : null;
+
     // Only use namespace prefixing when needed
     if (this.config.preserveNamespaces && nsURI) {
       if (this.config.stripPrefixes && nsMap && nsMap.has(nsURI)) {
@@ -624,10 +667,19 @@ export class XMLJSONTransformer {
     // Add attributes
     if (jsonObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(jsonObj[attrsKey])) {
-        const attrValue =
-          attrObj[this.config.propNames.value] !== undefined
-            ? attrObj[this.config.propNames.value]
-            : "";
+        // Apply transform to attribute value if needed
+        const originalAttrValue = attrObj[this.config.propNames.value];
+        const attrValue = this._hasTransform
+          ? this._applyTransform(originalAttrValue, {
+              ...context,
+              nodeName: attrName,
+              nodeType: Node.ATTRIBUTE_NODE,
+              isAttribute: true,
+            })
+          : originalAttrValue !== undefined
+          ? originalAttrValue
+          : "";
+
         const attrNs = attrObj[this.config.propNames.namespace];
 
         if (
@@ -673,23 +725,52 @@ export class XMLJSONTransformer {
     }
 
     // Check if content is mixed (contains HTML markup)
-    const value = jsonObj[valKey];
-    if (value && this._containsHtmlMarkup(value)) {
-      // For mixed content, set innerHTML
-      if (typeof element.innerHTML !== "undefined") {
-        element.innerHTML = value;
-      } else {
-        // Fallback for environments without innerHTML
-        // This is a simplified approach and may not handle all cases
-        element.textContent = value;
+    const originalValue = jsonObj[valKey];
+
+    // Apply transform if needed
+    const value = this._hasTransform
+      ? this._applyTransform(originalValue, context)
+      : originalValue;
+
+    // Handle special cases from transform function
+    if (context && context.isNull) {
+      // Add xsi:nil="true" attribute for null values
+      element.setAttributeNS(
+        "http://www.w3.org/2000/xmlns/",
+        "xmlns:xsi",
+        "http://www.w3.org/2001/XMLSchema-instance"
+      );
+      element.setAttributeNS(
+        "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:nil",
+        "true"
+      );
+    }
+
+    // Use the transformed value if available, otherwise use original
+    const contentValue = value !== undefined ? value : originalValue;
+
+    if (contentValue !== undefined) {
+      if (
+        typeof contentValue === "string" &&
+        this._containsHtmlMarkup(contentValue)
+      ) {
+        // For mixed content, set innerHTML
+        if (typeof element.innerHTML !== "undefined") {
+          element.innerHTML = contentValue;
+        } else {
+          // Fallback for environments without innerHTML
+          // This is a simplified approach and may not handle all cases
+          element.textContent = contentValue;
+        }
+      } else if (contentValue !== undefined) {
+        // For simple text content
+        element.textContent = String(contentValue);
       }
-    } else if (value !== undefined) {
-      // For simple text content
-      element.textContent = value;
     }
 
     // Only add special nodes and children if not already handling mixed content
-    if (!value || !this._containsHtmlMarkup(value)) {
+    if (!contentValue || !this._containsHtmlMarkup(String(contentValue))) {
       // Add CDATA sections
       if (this.config.preserveCDATA && Array.isArray(jsonObj[cdataKey])) {
         for (const cdataText of jsonObj[cdataKey]) {
@@ -738,6 +819,7 @@ export class XMLJSONTransformer {
 
     return element;
   }
+
   /**
    * Check if a string contains HTML markup
    * @param {string} str - The string to check
@@ -794,6 +876,30 @@ export class XMLJSONTransformer {
     }
 
     return result.join("\n");
+  }
+
+  _applyTransform(value, context) {
+    // Fast path - if no transform function, return original value
+    if (!this._hasTransform) return value;
+
+    // Apply the transform function
+    const result = this.config.transformFunction(value, context);
+
+    // If the function returns undefined, keep the original value
+    return result !== undefined ? result : value;
+  }
+
+  _createTransformContext(node, nodeName, direction) {
+    // Only create context if transform function exists
+    if (!this._hasTransform) return null;
+
+    return {
+      nodeName: nodeName,
+      nodeType: node.nodeType,
+      namespaceURI: node.namespaceURI || "",
+      attributes: node.attributes,
+      direction: direction,
+    };
   }
 
   // helper function for traversing the node children in a json object.
