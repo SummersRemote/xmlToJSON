@@ -85,11 +85,6 @@ export class XMLJSONTransformer {
     // Flag for fast path when no transform function is provided
     this._hasTransform = typeof this.config.transformFunction === "function";
 
-  // Ensure the xml property exists in outputOptions
-  if (!this.config.outputOptions.xml) {
-    this.config.outputOptions.xml = { declaration: true };
-  }
-
     // Convert numeric indent to string for XML formatting
     this.xmlIndent =
       typeof this.config.outputOptions.indent === "number"
