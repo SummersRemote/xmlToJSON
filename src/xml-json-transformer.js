@@ -42,6 +42,9 @@ export class XMLJSONTransformer {
       preserveCDATA: true,
       preserveTextNodes: true,
       preserveWhitespace: false,
+      grokBooleans: false,
+      grokNumbers: false,
+      grokNull: false, 
       transformFunction: config.transformFunction || null,
 
       // Element name handling
@@ -142,6 +145,12 @@ export class XMLJSONTransformer {
    * @returns {Object} - The JSON representation of the node
    * @private
    */
+  /**
+   * Process a DOM node and convert it to our JSON format
+   * @param {Node} node - The DOM node to process
+   * @returns {Object} - The JSON representation of the node
+   * @private
+   */
   _processNode(node) {
     // Get the node name (tag name for elements)
     let nodeName = node.nodeName;
@@ -184,9 +193,13 @@ export class XMLJSONTransformer {
       const innerContent = node.innerHTML || this._getInnerHTML(node);
 
       // Apply transform function if exists
-      nodeObj[this.config.propNames.value] = this._hasTransform
+      const transformedValue = this._hasTransform
         ? this._applyTransform(innerContent, context)
         : innerContent;
+
+      // Apply type conversion if configured
+      nodeObj[this.config.propNames.value] =
+        this._processValueWithTypeConversion(transformedValue);
 
       // Don't process child elements for mixed content
       nodeObj[this.config.propNames.attributes] = {};
@@ -198,20 +211,26 @@ export class XMLJSONTransformer {
       // Handle as regular content
       // Add value if it exists
       if (node.nodeValue) {
-        const value = this._hasTransform
+        const transformedValue = this._hasTransform
           ? this._applyTransform(node.nodeValue, context)
           : node.nodeValue;
-        nodeObj[this.config.propNames.value] = value;
+
+        // Apply type conversion if configured
+        nodeObj[this.config.propNames.value] =
+          this._processValueWithTypeConversion(transformedValue);
       } else if (
         node.nodeType === Node.ELEMENT_NODE &&
         node.childNodes.length === 1 &&
         node.childNodes[0].nodeType === Node.TEXT_NODE
       ) {
         // Simple text content case
-        const value = this._hasTransform
+        const transformedValue = this._hasTransform
           ? this._applyTransform(node.textContent, context)
           : node.textContent;
-        nodeObj[this.config.propNames.value] = value;
+
+        // Apply type conversion if configured
+        nodeObj[this.config.propNames.value] =
+          this._processValueWithTypeConversion(transformedValue);
       } else {
         nodeObj[this.config.propNames.value] = "";
       }
@@ -226,6 +245,8 @@ export class XMLJSONTransformer {
 
     // Process attributes if this is an element
     if (node.nodeType === Node.ELEMENT_NODE && node.hasAttributes()) {
+      let hasNilAttribute = false;
+
       for (let i = 0; i < node.attributes.length; i++) {
         const attr = node.attributes[i];
 
@@ -245,8 +266,22 @@ export class XMLJSONTransformer {
 
         const attrObj = {};
 
+        // Special handling for XSI nil attribute
+        if (
+          this.config.outputOptions.json.grokNull &&
+          (attrName === "nil" || attrName === "xsi:nil") &&
+          attr.namespaceURI === "http://www.w3.org/2001/XMLSchema-instance"
+        ) {
+          const lowerValue = attr.value.toLowerCase();
+          if (lowerValue === "true" || lowerValue === "1") {
+            // For elements with xsi:nil="true", set their value to null
+            nodeObj[this.config.propNames.value] = null;
+            hasNilAttribute = true;
+          }
+        }
+
         // Apply transform to attribute value if needed
-        const attrValue = this._hasTransform
+        const transformedValue = this._hasTransform
           ? this._applyTransform(attr.value, {
               ...context,
               nodeName: attrName,
@@ -255,12 +290,16 @@ export class XMLJSONTransformer {
             })
           : attr.value;
 
+        // Apply type conversion to attribute value
+        const processedValue =
+          this._processValueWithTypeConversion(transformedValue);
+
         // Only add value property if not empty or if we're not removing empty strings
         if (
-          attrValue !== "" ||
+          processedValue !== "" ||
           !this.config.outputOptions.json.removeEmptyStrings
         ) {
-          attrObj[this.config.propNames.value] = attrValue;
+          attrObj[this.config.propNames.value] = processedValue;
         }
 
         // Always add namespace if preserving namespaces
@@ -269,6 +308,13 @@ export class XMLJSONTransformer {
         }
 
         nodeObj[this.config.propNames.attributes][attrName] = attrObj;
+      }
+
+      // If we already have a nil attribute, skip processing children
+      if (hasNilAttribute) {
+        nodeObj[this.config.propNames.children] = [];
+        result[nodeName] = nodeObj;
+        return result;
       }
     }
 
@@ -334,9 +380,13 @@ export class XMLJSONTransformer {
         !nodeObj[this.config.propNames.value]
       ) {
         // Apply transform if needed
-        nodeObj[this.config.propNames.value] = this._hasTransform
+        const transformedValue = this._hasTransform
           ? this._applyTransform(textContent, context)
           : textContent;
+
+        // Apply type conversion if configured
+        nodeObj[this.config.propNames.value] =
+          this._processValueWithTypeConversion(transformedValue);
       }
 
       // Add child nodes if present
@@ -512,16 +562,16 @@ export class XMLJSONTransformer {
   jsonToXML(jsonObj) {
     // Create a new XML document
     const doc = document.implementation.createDocument(null, null, null);
-  
+
     // Process namespace prefixes if needed
     const nsMap = this._manageNamespacePrefixes(jsonObj);
-  
+
     // Process the root element
     const rootElName = Object.keys(jsonObj).find((key) => !key.startsWith("@"));
     if (!rootElName) {
       throw new Error("Invalid JSON: No root element found");
     }
-  
+
     const rootJSON = jsonObj[rootElName];
     const rootEl = this._createElementFromJSON(
       doc,
@@ -530,21 +580,21 @@ export class XMLJSONTransformer {
       nsMap
     );
     doc.appendChild(rootEl);
-  
+
     // Serialize the XML document
     const serializer = new XMLSerializer();
     let xmlString = serializer.serializeToString(doc);
-  
+
     // Add XML declaration if configured
     if (this.config.outputOptions.xml.declaration) {
       xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlString;
     }
-  
+
     // Pretty print if configured
     if (this.config.outputOptions.prettyPrint) {
       xmlString = this._prettyPrintXML(xmlString);
     }
-  
+
     return xmlString;
   }
 
@@ -796,15 +846,15 @@ export class XMLJSONTransformer {
    */
   _prettyPrintXML(xmlString) {
     const PADDING = this.xmlIndent;
-    
+
     // Handle XML declaration separately if present
     let declaration = "";
-    if (xmlString.startsWith('<?xml')) {
-      const endIndex = xmlString.indexOf('?>') + 2;
-      declaration = xmlString.substring(0, endIndex) + '\n';
+    if (xmlString.startsWith("<?xml")) {
+      const endIndex = xmlString.indexOf("?>") + 2;
+      declaration = xmlString.substring(0, endIndex) + "\n";
       xmlString = xmlString.substring(endIndex);
     }
-  
+
     // Normalize spacing between tags and content
     const tokens = xmlString
       .replace(/>\s*</g, "><") // collapse inter-tag whitespace
@@ -813,13 +863,13 @@ export class XMLJSONTransformer {
       .split("\n") // split into lines
       .map((line) => line.trim())
       .filter((line) => line.length > 0); // remove empty lines
-  
+
     let indentLevel = 0;
     const result = [];
-  
+
     for (let i = 0; i < tokens.length; i++) {
       const line = tokens[i];
-  
+
       const isClosingTag = /^<\/[^>]+>/.test(line);
       const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
       const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
@@ -827,31 +877,123 @@ export class XMLJSONTransformer {
       const isCDATA = /^<!\[CDATA\[.*\]\]>$/.test(line);
       const isProcessingInstruction = /^<\?.*\?>$/.test(line);
       const isTextNode = !line.startsWith("<") && !line.endsWith(">");
-  
+
       if (isClosingTag) {
         indentLevel = Math.max(indentLevel - 1, 0);
       }
-  
+
       const indent = PADDING.repeat(indentLevel);
       result.push(indent + line);
-  
+
       if (isOpeningTag) {
         indentLevel++;
       }
       // other types (self-closing, comments, etc.) do not affect indent level
     }
-  
+
     // Prepend the XML declaration if it was present
     return declaration + result.join("\n");
   }
 
+  /**
+   * Convert string values to boolean if they match true/false
+   * @param {string} value - The string value to potentially convert
+   * @returns {boolean|string} - Boolean if convertible, otherwise original string
+   * @private
+   */
+  _grokBoolean(value) {
+    if (typeof value !== "string") return value;
+
+    const lowerValue = value.trim().toLowerCase();
+    if (lowerValue === "true") return true;
+    if (lowerValue === "false") return false;
+
+    return value;
+  }
+
+/**
+ * Convert string values to numbers if they represent valid numbers
+ * @param {string} value - The string value to potentially convert
+ * @returns {number|string} - Number if convertible, otherwise original string
+ * @private
+ */
+_grokNumber(value) {
+  if (typeof value !== 'string') return value;
+  
+  // Preserve strings with leading zeros
+  if (/^0\d+$/.test(value)) return value;
+  
+  // Remove proper thousands separators (commas followed by 3 digits)
+  const normalized = value.trim().replace(/,(?=\d{3})/g, '');
+  
+  // Integer pattern
+  if (/^-?\d+$/.test(normalized)) {
+    return parseInt(normalized, 10);
+  }
+  
+  // Float pattern (including scientific notation)
+  if (/^-?\d*\.?\d+(?:[eE][+-]?\d+)?$/.test(normalized)) {
+    return parseFloat(normalized);
+  }
+  
+  return value;
+}
+
+/**
+ * Convert string values to null if they match conditions
+ * @param {string} value - The string value to potentially convert
+ * @returns {null|string} - null if convertible, otherwise original string
+ * @private
+ */
+_grokNull(value) {
+  if (value === null || value === undefined) return value;
+  if (typeof value !== 'string') return value;
+  
+  const lowerValue = value.trim().toLowerCase();
+  if (lowerValue === 'null') return null;
+  
+  return value;
+}
+
+/**
+ * Process a value with type conversion based on configuration
+ * @param {string} rawValue - The raw string value to process
+ * @returns {any} - The processed value with potential type conversion
+ * @private
+ */
+_processValueWithTypeConversion(rawValue) {
+  if (rawValue === undefined || rawValue === null) return rawValue;
+  
+  let processedValue = rawValue;
+  
+  // Apply null conversion if enabled
+  if (this.config.outputOptions.json.grokNull) {
+    const nullResult = this._grokNull(processedValue);
+    // If the value was converted to null, return it immediately
+    if (nullResult === null) return null;
+    processedValue = nullResult;
+  }
+  
+  // Apply number conversion if enabled
+  if (this.config.outputOptions.json.grokNumbers) {
+    processedValue = this._grokNumber(processedValue);
+  }
+  
+  // Apply boolean conversion if enabled and the value is still a string
+  if (this.config.outputOptions.json.grokBooleans && typeof processedValue === 'string') {
+    processedValue = this._grokBoolean(processedValue);
+  }
+  
+  return processedValue;
+}
+
   _applyTransform(value, context) {
     // Fast path - if no transform function, return original value
     if (!this._hasTransform) return value;
-    
+
     // Apply the transform function
     const result = this.config.transformFunction(value, context);
-    
+
     // If the function returns undefined, keep the original value
     return result !== undefined ? result : value;
   }
@@ -859,13 +1001,13 @@ export class XMLJSONTransformer {
   _createTransformContext(node, nodeName, direction) {
     // Only create context if transform function exists
     if (!this._hasTransform) return null;
-    
+
     return {
       nodeName: nodeName,
       nodeType: node.nodeType || 0,
       namespaceURI: node.namespaceURI || "",
       attributes: node.attributes || null,
-      direction: direction
+      direction: direction,
     };
   }
 
