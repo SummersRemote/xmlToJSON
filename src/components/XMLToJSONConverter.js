@@ -46,10 +46,13 @@ class XMLToJSONConverter {
   processNode(node) {
     // Get the node name (tag name for elements)
     let nodeName = node.nodeName;
+    let prefix = null;
 
-    // Strip namespace prefix if configured
-    if (this.config.stripPrefixes && nodeName.includes(":")) {
-      nodeName = nodeName.split(":").pop();
+    // Extract prefix if present
+    if (nodeName.includes(":")) {
+      const parts = nodeName.split(":");
+      prefix = parts[0];
+      nodeName = parts[1]; // Just store the local name without prefix
     }
 
     // Create the base JSON object
@@ -66,6 +69,11 @@ class XMLToJSONConverter {
     // Always add namespace when preserving namespaces is enabled
     if (this.config.preserveNamespaces) {
       nodeObj[this.config.propNames.namespace] = node.namespaceURI || "";
+
+      // Store prefix if present
+      if (prefix) {
+        nodeObj[this.config.propNames.prefix] = prefix;
+      }
     }
 
     // When using compact mode and node is empty, return an empty object for the element
@@ -206,24 +214,23 @@ class XMLToJSONConverter {
 
       // Process attribute name (strip prefix if configured)
       let attrName = attr.name;
-      if (this.config.stripPrefixes && attrName.includes(":")) {
-        attrName = attrName.split(":").pop();
+      let prefix = null;
+
+      if (attrName.includes(":")) {
+        const parts = attrName.split(":");
+        prefix = parts[0];
+        attrName = parts[1]; // Just store local name
       }
 
       const attrObj = {};
 
-      // Step 1: Apply transform to attribute value if needed
+      // Apply transform to attribute value if needed
       let attrValue = this.nodeProcessor.applyTransform(attr.value, {
         ...context,
         nodeName: attrName,
         nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
         isAttribute: true,
       });
-
-      // Step 2: Apply type conversions if configured
-      if (this.config.grokBoolean || this.config.grokNumber) {
-        attrValue = this.nodeProcessor.processValue(attrValue);
-      }
 
       // Only add value property if not empty or if we're not removing empty strings
       if (
@@ -233,9 +240,14 @@ class XMLToJSONConverter {
         attrObj[this.config.propNames.value] = attrValue;
       }
 
-      // Always add namespace if preserving namespaces
+      // Add namespace if preserving namespaces
       if (this.config.preserveNamespaces) {
         attrObj[this.config.propNames.namespace] = attr.namespaceURI || "";
+
+        // Store prefix if present
+        if (prefix) {
+          attrObj[this.config.propNames.prefix] = prefix;
+        }
       }
 
       nodeObj[this.config.propNames.attributes][attrName] = attrObj;
