@@ -33,21 +33,21 @@ class JSONToXMLConverter {
     }
 
     const rootJSON = jsonObj[rootElName];
-    
+
     // Track the namespaces we've already declared
     const declaredNamespaces = new Map();
-    
+
     // Create the root element
     const rootEl = this.createElement(doc, rootElName, rootJSON);
-    
+
     // Declare namespaces on the root element if preserving them
     if (this.config.preserveNamespaces) {
       this.collectAndDeclareNamespaces(rootEl, jsonObj, declaredNamespaces);
     }
-    
+
     // Process the root element
     this.processElement(doc, rootEl, rootJSON, declaredNamespaces);
-    
+
     // Add root to document
     doc.appendChild(rootEl);
 
@@ -79,45 +79,53 @@ class JSONToXMLConverter {
     const prefixKey = this.config.propNames.prefix;
     const childrenKey = this.config.propNames.children;
     const attrsKey = this.config.propNames.attributes;
-    
+
     // Function to collect namespaces
     const collectNS = (name, nodeObj) => {
       // Get namespace and prefix
       const uri = nodeObj[nsKey];
       const prefix = nodeObj[prefixKey];
-      
+
       if (uri && prefix && !declaredNamespaces.has(uri)) {
         // Add namespace declaration to root
-        rootEl.setAttributeNS('http://www.w3.org/2000/xmlns/', `xmlns:${prefix}`, uri);
+        rootEl.setAttributeNS(
+          "http://www.w3.org/2000/xmlns/",
+          `xmlns:${prefix}`,
+          uri
+        );
         declaredNamespaces.set(uri, prefix);
       }
-      
+
       // Process attributes
       if (nodeObj[attrsKey]) {
         for (const [_, attrObj] of Object.entries(nodeObj[attrsKey])) {
           const attrNs = attrObj[nsKey];
           const attrPrefix = attrObj[prefixKey];
-          
+
           if (attrNs && attrPrefix && !declaredNamespaces.has(attrNs)) {
             // Add namespace declaration to root
-            rootEl.setAttributeNS('http://www.w3.org/2000/xmlns/', `xmlns:${attrPrefix}`, attrNs);
+            rootEl.setAttributeNS(
+              "http://www.w3.org/2000/xmlns/",
+              `xmlns:${attrPrefix}`,
+              attrNs
+            );
             declaredNamespaces.set(attrNs, attrPrefix);
           }
         }
       }
-      
+
       // Process children
       if (Array.isArray(nodeObj[childrenKey])) {
         for (const childObj of nodeObj[childrenKey]) {
           for (const [childName, childData] of Object.entries(childObj)) {
-            if (!childName.startsWith('@')) {
+            if (!childName.startsWith("@")) {
               collectNS(childName, childData);
             }
           }
         }
       }
     };
-    
+
     // Start collection from root
     const rootName = Object.keys(jsonObj)[0];
     collectNS(rootName, jsonObj[rootName]);
@@ -133,15 +141,15 @@ class JSONToXMLConverter {
   createElement(doc, name, nodeObj) {
     const nsKey = this.config.propNames.namespace;
     const prefixKey = this.config.propNames.prefix;
-    
+
     // Skip namespace handling if not preserving or no namespace
     if (!this.config.preserveNamespaces || !nodeObj[nsKey]) {
       return doc.createElement(name);
     }
-    
+
     const nsUri = nodeObj[nsKey];
     const prefix = nodeObj[prefixKey];
-    
+
     // Create element with namespace
     if (prefix) {
       try {
@@ -151,7 +159,7 @@ class JSONToXMLConverter {
         return doc.createElement(name);
       }
     }
-    
+
     // No prefix - create simple element with namespace
     try {
       return doc.createElementNS(nsUri, name);
@@ -177,52 +185,58 @@ class JSONToXMLConverter {
     const commentsKey = this.config.propNames.comments;
     const processingKey = this.config.propNames.processing;
     const childrenKey = this.config.propNames.children;
-    
+
     // Create transform context
     const context = this.nodeProcessor.createTransformContext(
       {
         nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
-        namespaceURI: nodeObj[nsKey] || ""
+        namespaceURI: nodeObj[nsKey] || "",
       },
       element.nodeName,
       "json-to-xml"
     );
-    
+
     // Add attributes
     if (nodeObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
         // Skip xmlns attributes - already handled
-        if (attrName === 'xmlns' || attrName.startsWith('xmlns:')) {
+        if (attrName === "xmlns" || attrName.startsWith("xmlns:")) {
           continue;
         }
-        
+
         // Get attribute value
         const attrVal = attrObj[valKey];
         if (attrVal === undefined) {
           continue;
         }
-        
+
         // Convert to string if needed
-        const strVal = typeof attrVal === 'boolean' || typeof attrVal === 'number'
-          ? String(attrVal)
-          : attrVal;
-        
+        const strVal =
+          typeof attrVal === "boolean" || typeof attrVal === "number"
+            ? String(attrVal)
+            : attrVal;
+
         // Apply transform if configured
-        const transformedVal = this.nodeProcessor.applyTransform(strVal, {
-          ...context,
-          nodeName: attrName,
-          nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
-          isAttribute: true
-        }) ?? strVal;
-        
+        const transformedVal =
+          this.nodeProcessor.applyTransform(strVal, {
+            ...context,
+            nodeName: attrName,
+            nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
+            isAttribute: true,
+          }) ?? strVal;
+
         // Handle namespaced attribute
         if (this.config.preserveNamespaces && attrObj[nsKey]) {
           const attrNs = attrObj[nsKey];
           const attrPrefix = attrObj[prefixKey];
-          
+
           if (attrPrefix) {
             try {
-              element.setAttributeNS(attrNs, `${attrPrefix}:${attrName}`, transformedVal);
+              element.setAttributeNS(
+                attrNs,
+                `${attrPrefix}:${attrName}`,
+                transformedVal
+              );
             } catch (e) {
               element.setAttribute(attrName, transformedVal);
             }
@@ -234,23 +248,25 @@ class JSONToXMLConverter {
         }
       }
     }
-    
+
     // Add content
     const content = nodeObj[valKey];
     if (content !== undefined && content !== null) {
       // Format content
-      const strContent = typeof content === 'boolean' || typeof content === 'number'
-        ? String(content)
-        : content;
-      
+      const strContent =
+        typeof content === "boolean" || typeof content === "number"
+          ? String(content)
+          : content;
+
       // Apply transform if configured
-      const transformedContent = this.nodeProcessor.applyTransform(strContent, context) ?? strContent;
-      
+      const transformedContent =
+        this.nodeProcessor.applyTransform(strContent, context) ?? strContent;
+
       // Add content to element
-      if (typeof transformedContent === 'string') {
+      if (typeof transformedContent === "string") {
         if (this.nodeProcessor.containsHtmlMarkup(transformedContent)) {
           // Mixed content
-          if (typeof element.innerHTML !== 'undefined') {
+          if (typeof element.innerHTML !== "undefined") {
             element.innerHTML = transformedContent;
           } else {
             element.textContent = transformedContent;
@@ -261,12 +277,12 @@ class JSONToXMLConverter {
         }
       }
     }
-    
+
     // Skip child processing if this is mixed content
     if (content && this.nodeProcessor.containsHtmlMarkup(String(content))) {
       return;
     }
-    
+
     // Add CDATA sections if preserving them
     if (this.config.preserveCDATA && Array.isArray(nodeObj[cdataKey])) {
       for (const cdataText of nodeObj[cdataKey]) {
@@ -274,7 +290,7 @@ class JSONToXMLConverter {
         element.appendChild(cdataSection);
       }
     }
-    
+
     // Add comments if preserving them
     if (this.config.preserveComments && Array.isArray(nodeObj[commentsKey])) {
       for (const commentText of nodeObj[commentsKey]) {
@@ -282,27 +298,30 @@ class JSONToXMLConverter {
         element.appendChild(comment);
       }
     }
-    
+
     // Add processing instructions if preserving them
-    if (this.config.preserveProcessingInstr && Array.isArray(nodeObj[processingKey])) {
+    if (
+      this.config.preserveProcessingInstr &&
+      Array.isArray(nodeObj[processingKey])
+    ) {
       for (const piText of nodeObj[processingKey]) {
-        const [target, data] = piText.split(' ', 2);
-        const pi = doc.createProcessingInstruction(target, data || '');
+        const [target, data] = piText.split(" ", 2);
+        const pi = doc.createProcessingInstruction(target, data || "");
         element.appendChild(pi);
       }
     }
-    
+
     // Process children
     if (Array.isArray(nodeObj[childrenKey])) {
       for (const childObj of nodeObj[childrenKey]) {
         for (const [childName, childData] of Object.entries(childObj)) {
-          if (!childName.startsWith('@')) {
+          if (!childName.startsWith("@")) {
             // Create child element
             const childEl = this.createElement(doc, childName, childData);
-            
+
             // Process child element
             this.processElement(doc, childEl, childData, declaredNamespaces);
-            
+
             // Add to parent
             element.appendChild(childEl);
           }
@@ -317,51 +336,58 @@ class JSONToXMLConverter {
    * @returns {string} - Formatted XML string
    */
   prettyPrintXML(xmlString) {
-    const PADDING = typeof this.config.outputOptions.indent === 'number'
-      ? ' '.repeat(this.config.outputOptions.indent)
-      : '  ';
+    const INDENT =
+      typeof this.config.outputOptions.indent === "number"
+        ? " ".repeat(this.config.outputOptions.indent)
+        : "  ";
+    let formatted = "";
+    let indent = 0;
 
-    // Handle XML declaration separately if present
-    let declaration = "";
-    if (xmlString.startsWith("<?xml")) {
-      const endIndex = xmlString.indexOf("?>") + 2;
-      declaration = xmlString.substring(0, endIndex) + "\n";
-      xmlString = xmlString.substring(endIndex);
-    }
+    // Remove newlines and extra whitespace between tags
+    xmlString = xmlString.replace(/>\s+</g, "><").trim();
 
-    // Normalize spacing between tags and content
+    // Split into tags and text
     const tokens = xmlString
-      .replace(/>\s*</g, "><") // collapse inter-tag whitespace
-      .replace(/</g, "\n<") // newline before each tag
-      .replace(/>/g, ">\n") // newline after each tag
-      .split("\n") // split into lines
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0); // remove empty lines
-
-    let indentLevel = 0;
-    const result = [];
+      .split(/(<[^>]+>)/)
+      .filter((token) => token.trim() !== "");
 
     for (let i = 0; i < tokens.length; i++) {
-      const line = tokens[i];
+      const token = tokens[i];
 
-      const isClosingTag = /^<\/[^>]+>/.test(line);
-      const isOpeningTag = /^<[^!?\/][^>]*[^\/]>$/.test(line);
-      const isSelfClosingTag = /^<[^>]+\/>$/.test(line);
+      if (token.startsWith("<?") || token.startsWith("<!")) {
+        // Declaration or DOCTYPE
+        formatted += INDENT.repeat(indent) + token + "\n";
+      } else if (token.startsWith("</")) {
+        // Closing tag — decrease indent first
+        indent--;
+        formatted += INDENT.repeat(indent) + token + "\n";
+      } else if (token.match(/^<[^/?!][^>]*\/>$/)) {
+        // Self-closing tag
+        formatted += INDENT.repeat(indent) + token + "\n";
+      } else if (token.startsWith("<")) {
+        // Opening tag
+        // If next token is text and the one after that is a closing tag for this tag, keep inline
+        const next = tokens[i + 1];
+        const nextNext = tokens[i + 2];
 
-      if (isClosingTag) {
-        indentLevel = Math.max(indentLevel - 1, 0);
-      }
-
-      const indent = PADDING.repeat(indentLevel);
-      result.push(indent + line);
-
-      if (isOpeningTag) {
-        indentLevel++;
+        if (
+          next &&
+          !next.startsWith("<") &&
+          nextNext === `</${token.slice(1)}`
+        ) {
+          formatted += INDENT.repeat(indent) + token + next + nextNext + "\n";
+          i += 2; // skip the next two tokens
+        } else {
+          formatted += INDENT.repeat(indent) + token + "\n";
+          indent++;
+        }
+      } else {
+        // Text value not part of inline case (rare)
+        formatted += INDENT.repeat(indent) + token + "\n";
       }
     }
 
-    // Prepend the XML declaration if it was present
-    return declaration + result.join("\n");
+    return formatted.trim();
   }
 }
 
