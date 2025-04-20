@@ -3,6 +3,10 @@
  *
  * Handles processing of different node types
  */
+
+import BooleanTransformer from '../transformers/BooleanTransformer.js';
+import NumberTransformer from '../transformers/NumberTransformer.js';
+
 class NodeProcessor {
   /**
    * Creates a new NodeProcessor
@@ -14,8 +18,12 @@ class NodeProcessor {
     this.domEnv = domEnv;
     this.config = configManager.config;
     this.hasTransform = typeof this.config.transformFunction === "function";
+    
+    // Create transformers
+    this.booleanTransformer = new BooleanTransformer();
+    this.numberTransformer = new NumberTransformer();
   }
-
+  
   /**
    * Check if a node has mixed content (both text and element nodes)
    * @param {Node} node - The DOM node to check
@@ -89,6 +97,43 @@ class NodeProcessor {
       direction: direction,
     };
   }
+  
+  /**
+   * Transform a value using applicable transformers
+   * @param {any} value - Value to transform
+   * @param {Object} context - Transform context
+   * @returns {any} - Transformed value
+   */
+  transformValue(value, context = {}) {
+    if (value === undefined || value === null) {
+      return value;
+    }
+    
+    let result = value;
+    
+    // Get direction (default to xml-to-json if not specified)
+    const direction = context && context.direction ? context.direction : 'xml-to-json';
+    
+    // 1. Apply boolean transformer if enabled and applicable
+    if (this.config.grokBoolean && this.booleanTransformer.shouldApply(result, direction)) {
+      result = this.booleanTransformer.transform(result, direction);
+    }
+    
+    // 2. Apply number transformer if enabled and applicable
+    if (this.config.grokNumber && this.numberTransformer.shouldApply(result, direction)) {
+      result = this.numberTransformer.transform(result, direction);
+    }
+    
+    // 3. Apply custom transformer function if configured
+    if (typeof this.config.transformFunction === 'function') {
+      const transformed = this.config.transformFunction(result, context);
+      if (transformed !== undefined) {
+        result = transformed;
+      }
+    }
+    
+    return result;
+  }
 
   /**
    * Apply transform function to a value
@@ -97,10 +142,7 @@ class NodeProcessor {
    * @returns {any} - Transformed value
    */
   applyTransform(value, context) {
-    if (!this.hasTransform) return value;
-
-    const result = this.config.transformFunction(value, context);
-    return result !== undefined ? result : value;
+    return this.transformValue(value, context);
   }
 
   /**
@@ -117,13 +159,11 @@ class NodeProcessor {
   /**
    * Process a value based on configuration settings
    * @param {string} value - Original value to process
+   * @param {Object} context - Transform context
    * @returns {any} - Processed value
    */
-  processValue(value) {
-    if (value === undefined || value === null) return value;
-    
-    // Simply return the value without type conversions for simplicity
-    return value;
+  processValue(value, context = {}) {
+    return this.transformValue(value, context);
   }
 }
 
