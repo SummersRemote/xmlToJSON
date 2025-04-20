@@ -50,9 +50,6 @@ class ConfigurationManager {
       // value transform function
       transformFunction: null,
 
-      // Element name handling
-      stripPrefixes: true,
-
       // Output options
       outputOptions: {
         prettyPrint: true,
