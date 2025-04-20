@@ -141,8 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Transform function
       transformFunction: transformFunction,
       
-      // Element name handling
-      stripPrefixes: document.getElementById('strip-prefixes').checked,
+      // Strip prefixes option removed from configuration
       
       // Output options
       outputOptions: {
