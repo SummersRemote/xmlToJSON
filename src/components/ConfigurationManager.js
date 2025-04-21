@@ -43,12 +43,8 @@ class ConfigurationManager {
       preserveTextNodes: true,
       preserveWhitespace: false,
 
-      // Type conversion options
-      grokBoolean: false,
-      grokNumber: false,
-
-      // value transform function
-      transformFunction: null,
+      // value transforms
+      transformers: [],
 
       // Output options
       outputOptions: {
