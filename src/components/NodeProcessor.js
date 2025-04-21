@@ -4,8 +4,7 @@
  * Handles processing of different node types
  */
 
-import BooleanTransformer from '../transformers/BooleanTransformer.js';
-import NumberTransformer from '../transformers/NumberTransformer.js';
+import ValueTransformer from '../transformers/ValueTransformer.js';
 
 class NodeProcessor {
   /**
@@ -17,11 +16,9 @@ class NodeProcessor {
     this.configManager = configManager;
     this.domEnv = domEnv;
     this.config = configManager.config;
-    this.hasTransform = typeof this.config.transformFunction === "function";
     
-    // Create transformers
-    this.booleanTransformer = new BooleanTransformer();
-    this.numberTransformer = new NumberTransformer();
+    // Get valueTransforms from config or use empty array
+    this.valueTransforms = this.config.valueTransforms || [];
   }
   
   /**
@@ -84,10 +81,10 @@ class NodeProcessor {
    * @param {Node} node - DOM node
    * @param {string} nodeName - Node name
    * @param {string} direction - Transform direction
-   * @returns {Object|null} - Context object or null if no transform
+   * @returns {Object|null} - Context object or null if no valueTransforms
    */
   createTransformContext(node, nodeName, direction) {
-    if (!this.hasTransform) return null;
+    if (!this.valueTransforms || this.valueTransforms.length === 0) return null;
 
     return {
       nodeName: nodeName,
@@ -99,7 +96,7 @@ class NodeProcessor {
   }
   
   /**
-   * Transform a value using applicable transformers
+   * Transform a value using the transformer pipeline
    * @param {any} value - Value to transform
    * @param {Object} context - Transform context
    * @returns {any} - Transformed value
@@ -111,32 +108,16 @@ class NodeProcessor {
     
     let result = value;
     
-    // Get direction (default to xml-to-json if not specified)
-    const direction = context && context.direction ? context.direction : 'xml-to-json';
-    
-    // 1. Apply boolean transformer if enabled and applicable
-    if (this.config.grokBoolean && this.booleanTransformer.shouldApply(result, direction)) {
-      result = this.booleanTransformer.transform(result, direction);
-    }
-    
-    // 2. Apply number transformer if enabled and applicable
-    if (this.config.grokNumber && this.numberTransformer.shouldApply(result, direction)) {
-      result = this.numberTransformer.transform(result, direction);
-    }
-    
-    // 3. Apply custom transformer function if configured
-    if (typeof this.config.transformFunction === 'function') {
-      const transformed = this.config.transformFunction(result, context);
-      if (transformed !== undefined) {
-        result = transformed;
-      }
+    // Apply each transform in sequence
+    for (const transform of this.valueTransforms) {
+      result = transform.process(result, context);
     }
     
     return result;
   }
 
   /**
-   * Apply transform function to a value
+   * Apply transform to a value (alias for transformValue)
    * @param {any} value - Value to transform
    * @param {Object} context - Transform context
    * @returns {any} - Transformed value
@@ -157,7 +138,7 @@ class NodeProcessor {
   }
 
   /**
-   * Process a value based on configuration settings
+   * Process a value (alias for transformValue)
    * @param {string} value - Original value to process
    * @param {Object} context - Transform context
    * @returns {any} - Processed value

@@ -26,15 +26,18 @@ export class XMLJSONTransformer {
     // Initialize configuration manager
     this.configManager = new ConfigurationManager(config);
     
+    // Expose configuration for backward compatibility
+    this.config = this.configManager.config;
+    
+    // Ensure transformers array exists
+    this.config.valueTransforms = Array.isArray(config.valueTransforms) ? config.valueTransforms : [];
+    
     // Initialize components
     this.nodeProcessor = new NodeProcessor(this.configManager, DOMEnvironment);
     this.xmlToJsonConverter = new XMLToJSONConverter(this.configManager, this.nodeProcessor, DOMEnvironment);
     this.jsonToXmlConverter = new JSONToXMLConverter(this.configManager, this.nodeProcessor, DOMEnvironment);
     this.pathNavigator = new PathNavigator(this.configManager);
     this.schemaGenerator = new SchemaGenerator(this.configManager);
-    
-    // Expose configuration for backward compatibility
-    this.config = this.configManager.config;
   }
   
   /**

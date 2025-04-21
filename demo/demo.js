@@ -5,18 +5,10 @@ import XMLJSONTransformer from '../dist/index.js';
 import samples from './samples.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Predefined transformer functions
-  const transformers = {
-    none: null,
-    uppercase: (val, context) => {
-      return typeof val === 'string' ? val.toUpperCase() : val;
-    },
-    lowercase: (val, context) => {
-      return typeof val === 'string' ? val.toLowerCase() : val;
-    },
-    custom: null // Will be set from textarea
-  };
-
+  // Keep track of added transformers
+  const transformers = [];
+  let transformerIdCounter = 0;
+  
   // Initialize the demo
   // Set default sample
   document.getElementById('xml-input').value = samples.library.xml;
@@ -32,21 +24,150 @@ document.addEventListener('DOMContentLoaded', () => {
     configToggleBtn.textContent = isVisible ? 'Show Configuration Options' : 'Hide Configuration Options';
   });
   
-  // Transform function selector
-  const transformSelector = document.getElementById('transform-selector');
-  const customTransformContainer = document.getElementById('custom-transform-container');
+  // Transformer type selector logic
+  const transformerTypeSelector = document.getElementById('add-transformer-type');
+  const booleanOptions = document.getElementById('boolean-options');
+  const numberOptions = document.getElementById('number-options');
+  const customOptions = document.getElementById('custom-options');
   
-  transformSelector.addEventListener('change', (event) => {
-    const selectedTransform = event.target.value;
-    if (selectedTransform === 'custom') {
-      customTransformContainer.style.display = 'block';
-    } else {
-      customTransformContainer.style.display = 'none';
+  transformerTypeSelector.addEventListener('change', () => {
+    const selectedType = transformerTypeSelector.value;
+    // Hide all option panels
+    booleanOptions.style.display = 'none';
+    numberOptions.style.display = 'none';
+    customOptions.style.display = 'none';
+    
+    // Show the selected option panel
+    if (selectedType === 'boolean') {
+      booleanOptions.style.display = 'block';
+    } else if (selectedType === 'number') {
+      numberOptions.style.display = 'block';
+    } else if (selectedType === 'custom') {
+      customOptions.style.display = 'block';
+    }
+  });
+  
+  // Add transformer button logic
+  document.getElementById('add-transformer-btn').addEventListener('click', () => {
+    const selectedType = transformerTypeSelector.value;
+    const transformerId = transformerIdCounter++;
+    let transformerName = '';
+    let transformerConfig = null;
+    
+    if (selectedType === 'boolean') {
+      const trueValues = document.getElementById('boolean-true-values').value.split(',').map(v => v.trim());
+      const falseValues = document.getElementById('boolean-false-values').value.split(',').map(v => v.trim());
+      transformerName = 'Boolean Transformer';
+      transformerConfig = {
+        type: 'boolean',
+        options: {
+          trueValues,
+          falseValues
+        }
+      };
+    } else if (selectedType === 'number') {
+      transformerName = 'Number Transformer';
+      transformerConfig = {
+        type: 'number'
+      };
+    } else if (selectedType === 'custom') {
+      const customCode = document.getElementById('custom-function').value.trim();
+      if (!customCode) {
+        showError('Please enter a custom transform function');
+        return;
+      }
+      
+      transformerName = 'Custom Transformer';
+      transformerConfig = {
+        type: 'custom',
+        code: customCode
+      };
     }
     
-    // Update configuration
-    updateCurrentConfig(getConfig());
+    // Add transformer to the list
+    transformers.push({
+      id: transformerId,
+      name: transformerName,
+      config: transformerConfig
+    });
+    
+    // Update the UI
+    updateTransformerList();
+    updateCurrentConfig();
   });
+  
+  // Function to update the transformer list in the UI
+  function updateTransformerList() {
+    const transformList = document.getElementById('transform-list');
+    const noTransformsMessage = document.getElementById('no-transforms-message');
+    
+    // Clear the list
+    while (transformList.firstChild) {
+      transformList.removeChild(transformList.firstChild);
+    }
+    
+    if (transformers.length === 0) {
+      // If no transformers, show the message
+      transformList.appendChild(noTransformsMessage);
+      return;
+    }
+    
+    // Add each transformer to the list
+    transformers.forEach((transformer, index) => {
+      const transformItem = document.createElement('div');
+      transformItem.className = 'transform-item';
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = `${index + 1}. ${transformer.name}`;
+      
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'transform-actions';
+      
+      const moveUpBtn = document.createElement('button');
+      moveUpBtn.textContent = '↑';
+      moveUpBtn.title = 'Move Up';
+      moveUpBtn.disabled = index === 0;
+      moveUpBtn.addEventListener('click', () => {
+        if (index > 0) {
+          // Swap with the previous transformer
+          [transformers[index], transformers[index - 1]] = [transformers[index - 1], transformers[index]];
+          updateTransformerList();
+          updateCurrentConfig();
+        }
+      });
+      
+      const moveDownBtn = document.createElement('button');
+      moveDownBtn.textContent = '↓';
+      moveDownBtn.title = 'Move Down';
+      moveDownBtn.disabled = index === transformers.length - 1;
+      moveDownBtn.addEventListener('click', () => {
+        if (index < transformers.length - 1) {
+          // Swap with the next transformer
+          [transformers[index], transformers[index + 1]] = [transformers[index + 1], transformers[index]];
+          updateTransformerList();
+          updateCurrentConfig();
+        }
+      });
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = '✕';
+      removeBtn.title = 'Remove';
+      removeBtn.addEventListener('click', () => {
+        transformers.splice(index, 1);
+        updateTransformerList();
+        updateCurrentConfig();
+      });
+      
+      actionsDiv.appendChild(moveUpBtn);
+      actionsDiv.appendChild(moveDownBtn);
+      actionsDiv.appendChild(removeBtn);
+      
+      transformItem.appendChild(nameSpan);
+      transformItem.appendChild(actionsDiv);
+      
+      transformList.appendChild(transformItem);
+    });
+  }
   
   // Sample selector event listener
   document.getElementById('sample-selector').addEventListener('change', (event) => {
@@ -56,6 +177,109 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('json-output').value = '';
     }
   });
+  
+  // Create transformer instances for XMLJSONTransformer
+  function createTransformerInstances() {
+    return transformers.map(transformer => {
+      if (transformer.config.type === 'boolean') {
+        return new BooleanTransformer(transformer.config.options);
+      } else if (transformer.config.type === 'number') {
+        return new NumberTransformer();
+      } else if (transformer.config.type === 'custom') {
+        return new CustomTransformer(transformer.config.code);
+      }
+      return null;
+    }).filter(t => t !== null);
+  }
+  
+  // Helper class for Boolean Transformer
+  class BooleanTransformer {
+    constructor(options = {}) {
+      this.trueValues = options.trueValues || ['true'];
+      this.falseValues = options.falseValues || ['false'];
+      this.trueValuesLower = this.trueValues.map(v => String(v).toLowerCase());
+      this.falseValuesLower = this.falseValues.map(v => String(v).toLowerCase());
+    }
+    
+    process(value, context = {}) {
+      const direction = context.direction || 'xml-to-json';
+      
+      if (direction === 'xml-to-json') {
+        if (typeof value !== 'string') return value;
+        const valueLower = value.toLowerCase();
+        
+        if (this.trueValuesLower.includes(valueLower)) {
+          return true;
+        }
+        
+        if (this.falseValuesLower.includes(valueLower)) {
+          return false;
+        }
+      } 
+      else if (direction === 'json-to-xml') {
+        if (typeof value !== 'boolean') return value;
+        return String(value);
+      }
+      
+      return value;
+    }
+  }
+  
+  // Helper class for Number Transformer
+  class NumberTransformer {
+    process(value, context = {}) {
+      const direction = context.direction || 'xml-to-json';
+      
+      if (direction === 'xml-to-json') {
+        if (typeof value !== 'string' || value === '') return value;
+        
+        // Clean value (remove thousands separators)
+        const cleanValue = value.replace(/,(?=\d{3})/g, '');
+        
+        // Check if it matches number patterns
+        const isNumber = 
+          /^[-+]?[\d]+$/.test(cleanValue) || 
+          /^[-+]?[\d]*\.[\d]+$/.test(cleanValue) || 
+          /^[-+]?[\d]*\.?[\d]*[eE][-+]?[\d]+$/.test(cleanValue);
+            
+        if (isNumber) {
+          try {
+            return parseFloat(cleanValue);
+          } catch (e) {
+            return value;
+          }
+        }
+      } 
+      else if (direction === 'json-to-xml') {
+        if (typeof value === 'number') {
+          return String(value);
+        }
+      }
+      
+      return value;
+    }
+  }
+  
+  // Helper class for Custom Transformer
+  class CustomTransformer {
+    constructor(code) {
+      try {
+        this.transformFn = new Function('value', 'context', code);
+      } catch (error) {
+        console.error('Error creating custom transformer:', error);
+        this.transformFn = (value) => value;
+      }
+    }
+    
+    process(value, context = {}) {
+      try {
+        return this.transformFn(value, context);
+      } catch (error) {
+        console.error('Error in custom transformer:', error);
+        return value;
+      }
+    }
+  }
   
   // XML to JSON conversion
   document.getElementById('xml-to-json').addEventListener('click', () => {
@@ -108,22 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Helper function to get configuration from UI
   function getConfig() {
-    const transformType = document.getElementById('transform-selector').value;
-    let transformFunction = transformers[transformType];
-    
-    // Handle custom transform function
-    if (transformType === 'custom') {
-      const customCode = document.getElementById('transform-function').value.trim();
-      if (customCode) {
-        try {
-          // Use Function constructor to create a function from the string
-          transformFunction = new Function('value', 'context', 'return ' + customCode);
-        } catch (error) {
-          showError('Error in custom transform function: ' + error.message);
-          transformFunction = null;
-        }
-      }
-    }
+    // Create value transforms
+    const valueTransforms = createTransformerInstances();
     
     return {
       // Features to preserve
@@ -134,14 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
       preserveTextNodes: document.getElementById('preserve-text-nodes').checked,
       preserveWhitespace: document.getElementById('preserve-whitespace').checked,
       
-      // Type conversion options
-      grokBoolean: document.getElementById('grok-boolean').checked,
-      grokNumber: document.getElementById('grok-number').checked,
-      
-      // Transform function
-      transformFunction: transformFunction,
-      
-      // Strip prefixes option removed from configuration
+      // Value transforms
+      valueTransforms: valueTransforms,
       
       // Output options
       outputOptions: {
@@ -182,16 +386,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Create a copy to prevent circular references when trying to stringify
-    const configCopy = JSON.parse(JSON.stringify(config));
+    const configCopy = { ...config };
     
-    // Add placeholder for transform function if it exists
-    if (config.transformFunction) {
-      const transformType = document.getElementById('transform-selector').value;
-      if (transformType === 'custom') {
-        configCopy.transformFunction = document.getElementById('transform-function').value;
-      } else {
-        configCopy.transformFunction = `[Function: ${transformType}]`;
-      }
+    // Handle value transforms display
+    if (config.valueTransforms && config.valueTransforms.length > 0) {
+      configCopy.valueTransforms = transformers.map(t => {
+        const { id, ...rest } = t;
+        return rest;
+      });
+    } else {
+      configCopy.valueTransforms = [];
     }
     
     configElement.textContent = JSON.stringify(configCopy, null, 2);
@@ -210,7 +414,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 5000);
   }
   
-  // Function to load samples from external files
+  // Initialize transformer type selector to show first option
+  transformerTypeSelector.dispatchEvent(new Event('change'));
+  
+  // Function to load samples from external files (if available)
   async function loadExternalSamples() {
     try {
       const response = await fetch('samples/index.json');
@@ -235,40 +442,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       
       // Update selection handler
-      selector.removeEventListener('change', selectorChangeHandler);
-      selector.addEventListener('change', selectorChangeHandler);
+      selector.addEventListener('change', async (event) => {
+        const selectedValue = event.target.value;
+        
+        // Handle built-in samples
+        if (selectedValue && !selectedValue.startsWith('external:') && samples[selectedValue]) {
+          document.getElementById('xml-input').value = samples[selectedValue].xml;
+          document.getElementById('json-output').value = '';
+          return;
+        }
+        
+        // Handle external samples
+        if (selectedValue && selectedValue.startsWith('external:')) {
+          const sampleId = selectedValue.split(':')[1];
+          try {
+            const sampleResponse = await fetch(`samples/${sampleId}.xml`);
+            if (!sampleResponse.ok) {
+              throw new Error(`Failed to load sample ${sampleId}`);
+            }
+            
+            const sampleXml = await sampleResponse.text();
+            document.getElementById('xml-input').value = sampleXml;
+            document.getElementById('json-output').value = '';
+          } catch (error) {
+            showError(`Error loading external sample: ${error.message}`);
+          }
+        }
+      });
     } catch (error) {
       console.error('Error loading external samples:', error);
       // Silently fail - user can still use built-in samples
-    }
-  }
-  
-  // Sample selector change handler (defined separately for removeEventListener)
-  async function selectorChangeHandler(event) {
-    const selectedValue = event.target.value;
-    
-    // Handle built-in samples
-    if (selectedValue && !selectedValue.startsWith('external:') && samples[selectedValue]) {
-      document.getElementById('xml-input').value = samples[selectedValue].xml;
-      document.getElementById('json-output').value = '';
-      return;
-    }
-    
-    // Handle external samples
-    if (selectedValue && selectedValue.startsWith('external:')) {
-      const sampleId = selectedValue.split(':')[1];
-      try {
-        const sampleResponse = await fetch(`samples/${sampleId}.xml`);
-        if (!sampleResponse.ok) {
-          throw new Error(`Failed to load sample ${sampleId}`);
-        }
-        
-        const sampleXml = await sampleResponse.text();
-        document.getElementById('xml-input').value = sampleXml;
-        document.getElementById('json-output').value = '';
-      } catch (error) {
-        showError(`Error loading external sample: ${error.message}`);
-      }
     }
   }
   
