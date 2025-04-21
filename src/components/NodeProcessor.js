@@ -17,10 +17,65 @@ class NodeProcessor {
     this.domEnv = domEnv;
     this.config = configManager.config;
     
-    // Get valueTransforms from config or use empty array (renamed from transformers)
+    // Get valueTransforms from config or use empty array
     this.valueTransforms = this.config.valueTransforms || [];
   }
   
+  /**
+   * Check if a node has mixed content (both text and element nodes)
+   * @param {Node} node - The DOM node to check
+   * @returns {boolean} - Whether the node has mixed content
+   */
+  hasMixedContent(node) {
+    if (
+      node.nodeType !== this.domEnv.nodeTypes.ELEMENT_NODE ||
+      !node.hasChildNodes()
+    ) {
+      return false;
+    }
+
+    let hasTextNode = false;
+    let hasElementNode = false;
+
+    for (let i = 0; i < node.childNodes.length; i++) {
+      const childNode = node.childNodes[i];
+
+      if (childNode.nodeType === this.domEnv.nodeTypes.TEXT_NODE) {
+        // Skip pure whitespace nodes when checking for text content
+        if (childNode.textContent.trim() !== "") {
+          hasTextNode = true;
+        }
+      } else if (childNode.nodeType === this.domEnv.nodeTypes.ELEMENT_NODE) {
+        hasElementNode = true;
+      }
+
+      if (hasTextNode && hasElementNode) return true;
+    }
+
+    return hasTextNode && hasElementNode;
+  }
+
+  /**
+   * Get the innerHTML of a node (with fallback for environments without innerHTML)
+   * @param {Node} node - The DOM node
+   * @returns {string} - The innerHTML of the node
+   */
+  getInnerHTML(node) {
+    if (node.innerHTML !== undefined) {
+      return node.innerHTML;
+    }
+
+    // Fallback implementation
+    const serializer = this.domEnv.createSerializer();
+    let result = "";
+
+    for (let i = 0; i < node.childNodes.length; i++) {
+      result += serializer.serializeToString(node.childNodes[i]);
+    }
+
+    return result;
+  }
+
   /**
    * Create a context object for transform operations
    * @param {Node} node - DOM node
@@ -53,7 +108,7 @@ class NodeProcessor {
     
     let result = value;
     
-    // Apply each transform in sequence (renamed from transformers)
+    // Apply each transform in sequence
     for (const transform of this.valueTransforms) {
       result = transform.process(result, context);
     }

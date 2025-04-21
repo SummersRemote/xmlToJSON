@@ -87,6 +87,11 @@ class JSONToXMLConverter {
       const prefix = nodeObj[prefixKey];
 
       if (uri && prefix && !declaredNamespaces.has(uri)) {
+        // Skip if this is an attempt to redefine the xmlns namespace
+        if (uri === "http://www.w3.org/2000/xmlns/" && prefix === "xmlns") {
+          return; // Skip this namespace declaration
+        }
+
         // Add namespace declaration to root
         rootEl.setAttributeNS(
           "http://www.w3.org/2000/xmlns/",
@@ -103,6 +108,14 @@ class JSONToXMLConverter {
           const attrPrefix = attrObj[prefixKey];
 
           if (attrNs && attrPrefix && !declaredNamespaces.has(attrNs)) {
+            // Skip if this is an attempt to redefine the xmlns namespace
+            if (
+              attrNs === "http://www.w3.org/2000/xmlns/" &&
+              attrPrefix === "xmlns"
+            ) {
+              continue; // Skip this namespace declaration
+            }
+
             // Add namespace declaration to root
             rootEl.setAttributeNS(
               "http://www.w3.org/2000/xmlns/",
@@ -187,20 +200,26 @@ class JSONToXMLConverter {
     const childrenKey = this.config.propNames.children;
 
     // Create transform context
-    const context = this.nodeProcessor.createTransformContext(
-      {
-        nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
-        namespaceURI: nodeObj[nsKey] || "",
-      },
-      element.nodeName,
-      "json-to-xml"
-    );
+    const context = {
+      nodeName: element.nodeName,
+      nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
+      namespaceURI: nodeObj[nsKey] || "",
+      direction: "json-to-xml",
+    };
 
     // Add attributes
     if (nodeObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
         // Skip xmlns attributes - already handled
         if (attrName === "xmlns" || attrName.startsWith("xmlns:")) {
+          continue;
+        }
+
+        // Skip attributes with the xmlns namespace
+        if (
+          attrObj[nsKey] === "http://www.w3.org/2000/xmlns/" &&
+          (attrObj[prefixKey] === "xmlns" || attrName === "xmlns")
+        ) {
           continue;
         }
 
@@ -216,19 +235,30 @@ class JSONToXMLConverter {
             ? String(attrVal)
             : attrVal;
 
+        // Create attribute context
+        const attrContext = {
+          nodeName: attrName,
+          nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
+          isAttribute: true,
+          namespaceURI: attrObj[nsKey] || "",
+          direction: "json-to-xml",
+        };
+
         // Apply transform if configured
-        const transformedVal =
-          this.nodeProcessor.applyTransform(strVal, {
-            ...context,
-            nodeName: attrName,
-            nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
-            isAttribute: true,
-          }) ?? strVal;
+        const transformedVal = this.nodeProcessor.transformValue(
+          strVal,
+          attrContext
+        );
 
         // Handle namespaced attribute
         if (this.config.preserveNamespaces && attrObj[nsKey]) {
           const attrNs = attrObj[nsKey];
           const attrPrefix = attrObj[prefixKey];
+
+          // Skip if this is an attempt to redefine the xmlns namespace
+          if (attrNs === "http://www.w3.org/2000/xmlns/") {
+            continue;
+          }
 
           if (attrPrefix) {
             try {
@@ -259,8 +289,10 @@ class JSONToXMLConverter {
           : content;
 
       // Apply transform if configured
-      const transformedContent =
-        this.nodeProcessor.applyTransform(strContent, context) ?? strContent;
+      const transformedContent = this.nodeProcessor.transformValue(
+        strContent,
+        context
+      );
 
       // Add content to element
       if (typeof transformedContent === "string") {
