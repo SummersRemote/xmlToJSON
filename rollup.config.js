@@ -20,48 +20,58 @@ const banner = `/*!
  * Released under the ${pkg.license} License
  */`;
 
+// Define external dependencies for plugins
+const pluginExternals = [
+  'dayjs',
+  'dayjs/plugin/customParseFormat',
+  'dayjs/plugin/utc', 
+  'dayjs/plugin/timezone'
+];
+
+// Create base config for reuse
+const createBaseConfig = (input, output, options = {}) => ({
+  input,
+  output,
+  external: options.external || [],
+  plugins: [
+    resolve(),
+    babel({
+      babelHelpers: "bundled",
+      exclude: "node_modules/**",
+    }),
+    ...(options.minify ? [terser()] : []),
+    filesize(),
+  ],
+});
+
 export default [
-  // Main ESM build
-  {
-    input: "src/index.js",
-    output: {
+  // Core library: ESM build
+  createBaseConfig(
+    "src/index.js",
+    {
       file: "./dist/index.js",
       format: "es",
       banner,
       sourcemap: true,
-    },
-    plugins: [
-      resolve(),
-      babel({
-        babelHelpers: "bundled",
-        exclude: "node_modules/**",
-      }),
-      filesize(),
-    ],
-  },
-  // Minified ESM version
-  {
-    input: "src/index.js",
-    output: {
+    }
+  ),
+  
+  // Core library: Minified ESM
+  createBaseConfig(
+    "src/index.js",
+    {
       file: "./dist/index.min.js",
       format: "es",
       banner,
       sourcemap: false,
     },
-    plugins: [
-      resolve(),
-      babel({
-        babelHelpers: "bundled",
-        exclude: "node_modules/**",
-      }),
-      terser(),
-      filesize(),
-    ],
-  },
-  // UMD bundle for direct browser usage
-  {
-    input: "src/index.js",
-    output: {
+    { minify: true }
+  ),
+  
+  // Core library: UMD bundle
+  createBaseConfig(
+    "src/index.js",
+    {
       file: "./dist/xmltojson.umd.js",
       format: "umd",
       name: "XMLJSONTransformer",
@@ -69,20 +79,15 @@ export default [
       sourcemap: true,
       exports: "named",
     },
-    plugins: [
-      resolve(),
-      commonjs(),
-      babel({
-        babelHelpers: "bundled",
-        exclude: "node_modules/**",
-      }),
-      filesize(),
-    ],
-  },
-  // Minified UMD bundle
-  {
-    input: "src/index.js",
-    output: {
+    { 
+      plugins: [commonjs()]
+    }
+  ),
+  
+  // Core library: Minified UMD bundle
+  createBaseConfig(
+    "src/index.js",
+    {
       file: "./dist/xmltojson.umd.min.js",
       format: "umd",
       name: "XMLJSONTransformer",
@@ -90,15 +95,116 @@ export default [
       sourcemap: false,
       exports: "named",
     },
-    plugins: [
-      resolve(),
-      commonjs(),
-      babel({
-        babelHelpers: "bundled",
-        exclude: "node_modules/**",
-      }),
-      terser(),
-      filesize(),
-    ],
-  }
+    { 
+      plugins: [commonjs()],
+      minify: true
+    }
+  ),
+  
+  // Plugins: ESM build
+  createBaseConfig(
+    "src/plugins/index.js",
+    {
+      file: "./dist/plugins/index.js",
+      format: "es",
+      banner,
+      sourcemap: true,
+    },
+    {
+      external: [...pluginExternals, '../../core/transformers/ValueTransformer.js']
+    }
+  ),
+  
+  // Plugins: Minified ESM
+  createBaseConfig(
+    "src/plugins/index.js",
+    {
+      file: "./dist/plugins/index.min.js",
+      format: "es",
+      banner,
+      sourcemap: false,
+    },
+    {
+      external: [...pluginExternals, '../../core/transformers/ValueTransformer.js'],
+      minify: true
+    }
+  ),
+  
+  // Plugins: UMD bundle
+  createBaseConfig(
+    "src/plugins/index.js",
+    {
+      file: "./dist/plugins/xmltojson-plugins.umd.js",
+      format: "umd",
+      name: "XMLJSONTransformerPlugins",
+      banner,
+      sourcemap: true,
+      exports: "named",
+      globals: {
+        'dayjs': 'dayjs',
+        'dayjs/plugin/customParseFormat': 'dayjsCustomParseFormat',
+        'dayjs/plugin/utc': 'dayjsUtc',
+        'dayjs/plugin/timezone': 'dayjsTimezone',
+        '../../core/transformers/ValueTransformer.js': 'ValueTransformer'
+      }
+    },
+    { 
+      external: [...pluginExternals, '../../core/transformers/ValueTransformer.js'],
+      plugins: [commonjs()]
+    }
+  ),
+  
+  // Plugins: Minified UMD bundle
+  createBaseConfig(
+    "src/plugins/index.js",
+    {
+      file: "./dist/plugins/xmltojson-plugins.umd.min.js",
+      format: "umd",
+      name: "XMLJSONTransformerPlugins",
+      banner,
+      sourcemap: false,
+      exports: "named",
+      globals: {
+        'dayjs': 'dayjs',
+        'dayjs/plugin/customParseFormat': 'dayjsCustomParseFormat',
+        'dayjs/plugin/utc': 'dayjsUtc',
+        'dayjs/plugin/timezone': 'dayjsTimezone',
+        '../../core/transformers/ValueTransformer.js': 'ValueTransformer'
+      }
+    },
+    { 
+      external: [...pluginExternals, '../../core/transformers/ValueTransformer.js'],
+      plugins: [commonjs()],
+      minify: true
+    }
+  ),
+  
+  // Individual plugin: DateTransformer
+  createBaseConfig(
+    "src/plugins/DateTransformer.js",
+    {
+      file: "./dist/plugins/DateTransformer.js",
+      format: "es",
+      banner,
+      sourcemap: true,
+    },
+    {
+      external: [...pluginExternals, '../core/transformers/ValueTransformer.js']
+    }
+  ),
+  
+  // Individual plugin: DateTransformer (minified)
+  createBaseConfig(
+    "src/plugins/DateTransformer.js",
+    {
+      file: "./dist/plugins/DateTransformer.min.js",
+      format: "es",
+      banner,
+      sourcemap: false,
+    },
+    {
+      external: [...pluginExternals, '../core/transformers/ValueTransformer.js'],
+      minify: true
+    }
+  )
 ];
