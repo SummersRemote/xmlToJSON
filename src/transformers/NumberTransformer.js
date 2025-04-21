@@ -1,51 +1,60 @@
 /**
- * Transforms values between string and number types
+ * Transforms string values to number types
  */
-class NumberTransformer {
-    /**
-     * Check if transformer should be applied
-     * @param {any} value - Value to check
-     * @param {string} direction - Conversion direction ('xml-to-json' or 'json-to-xml')
-     * @returns {boolean} - Whether to apply transformation
-     */
-    shouldApply(value, direction = 'xml-to-json') {
-      if (direction === 'xml-to-json') {
-        if (typeof value !== 'string' || value === '') return false;
-        
-        // Clean value (remove thousands separators)
-        const cleanValue = value.replace(/,(?=\d{3})/g, '');
-        
-        // Check if it matches number patterns
-        return /^[-+]?[\d]+$/.test(cleanValue) || 
-               /^[-+]?[\d]*\.[\d]+$/.test(cleanValue) || 
-               /^[-+]?[\d]*\.?[\d]*[eE][-+]?[\d]+$/.test(cleanValue);
-      } else {
-        return typeof value === 'number';
+class NumberTransformer extends ValueTransformer {
+  /**
+   * Creates a NumberTransformer
+   * @param {Object} options - Configuration options
+   */
+  constructor(options = {}) {
+    super();
+    this.options = options;
+    
+    // Precompile regular expressions for better performance
+    this.integerPattern = /^[-+]?[\d]+$/;
+    this.floatPattern = /^[-+]?[\d]*\.[\d]+$/;
+    this.thousandsSeparatorPattern = /,(?=\d{3})/g;
+  }
+  
+  /**
+   * Process a value, transforming it if applicable
+   * @param {any} value - Value to potentially transform
+   * @param {Object} context - Context including direction and other information
+   * @returns {any} - Transformed value or original if not applicable
+   */
+  process(value, context = {}) {
+    const direction = context.direction || 'xml-to-json';
+    
+    if (direction === 'xml-to-json') {
+      // Only process strings in XML-to-JSON direction
+      if (typeof value !== 'string' || value === '') return value;
+      
+      // Clean value (remove thousands separators)
+      const cleanValue = value.replace(this.thousandsSeparatorPattern, '');
+      
+      try {
+        // Check if it's an integer or floating point number
+        if (this.integerPattern.test(cleanValue)) {
+          return parseInt(cleanValue, 10);
+        } else if (this.floatPattern.test(cleanValue)) {
+          return parseFloat(cleanValue);
+        }
+      } catch (e) {
+        // If parsing fails, return the original value
+        return value;
       }
+    } 
+    else if (direction === 'json-to-xml') {
+      // Only process numbers in JSON-to-XML direction
+      if (typeof value !== 'number') return value;
+      
+      // Convert to string
+      return String(value);
     }
     
-    /**
-     * Transform value based on direction
-     * @param {any} value - Value to transform
-     * @param {string} direction - Conversion direction ('xml-to-json' or 'json-to-xml')
-     * @returns {number|string} - Transformed value
-     */
-    transform(value, direction = 'xml-to-json') {
-      if (!this.shouldApply(value, direction)) return value;
-      
-      if (direction === 'xml-to-json') {
-        try {
-          // Convert string to number
-          const cleanValue = value.replace(/,(?=\d{3})/g, '');
-          return parseFloat(cleanValue);
-        } catch (e) {
-          return value;
-        }
-      } else {
-        // Convert number to string
-        return String(value);
-      }
-    }
+    // If no transformation applies, return original value
+    return value;
   }
+}
 
-  export default NumberTransformer;
+export default NumberTransformer;
