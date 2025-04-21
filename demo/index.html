@@ -167,6 +167,39 @@
       font-family: monospace;
       font-size: 14px;
     }
+    .transform-list {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .transform-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px;
+      border-bottom: 1px solid #eee;
+    }
+    .transform-item:last-child {
+      border-bottom: none;
+    }
+    .transform-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .transform-actions button {
+      padding: 3px 8px;
+      font-size: 12px;
+    }
+    .transform-options {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
   </style>
 </head>
 <body>
@@ -235,39 +268,60 @@
           </div>
         </div>
         
-        <!-- Removed Element Name Handling section with stripPrefixes option -->
-        
         <div class="config-section">
-          <h4>Type Conversion</h4>
-          <div class="checkbox-group">
-            <div class="checkbox-item">
-              <input type="checkbox" id="grok-boolean">
-              <label for="grok-boolean">Convert Boolean Values</label>
-            </div>
-            <div class="checkbox-item">
-              <input type="checkbox" id="grok-number">
-              <label for="grok-number">Convert Number Values</label>
+          <h4>Value Transformers</h4>
+          <p>Add transformers that process values during conversion. Transformers are applied in the order they're added.</p>
+          
+          <div class="transform-list" id="transform-list">
+            <!-- Transforms will be added here dynamically -->
+            <div class="transform-item" id="no-transforms-message">
+              No transformers added yet
             </div>
           </div>
-        </div>
-        
-        <div class="config-section">
-          <h4>Transform Function</h4>
+          
           <div class="input-group">
-            <div class="input-item" style="width: 100%;">
-              <label for="transform-selector">Predefined Transform:</label>
-              <select id="transform-selector">
-                <option value="none">None</option>
-                <option value="uppercase">UPPERCASE</option>
-                <option value="lowercase">lowercase</option>
-                <option value="custom">Custom</option>
+            <div class="input-item">
+              <label for="add-transformer-type">Add Transformer:</label>
+              <select id="add-transformer-type">
+                <option value="boolean">Boolean Transformer</option>
+                <option value="number">Number Transformer</option>
+                <option value="custom">Custom Transformer</option>
               </select>
             </div>
+            <div class="input-item" style="align-self: flex-end;">
+              <button id="add-transformer-btn">Add Transformer</button>
+            </div>
           </div>
-          <div id="custom-transform-container" style="display: none; margin-top: 10px;">
-            <textarea id="transform-function" class="transform-function" placeholder="// Custom transform function
+          
+          <div id="boolean-options" class="transform-options" style="display: none;">
+            <h5>Boolean Transformer Options</h5>
+            <div class="input-group">
+              <div class="input-item">
+                <label for="boolean-true-values">True Values (comma-separated):</label>
+                <input type="text" id="boolean-true-values" value="true,yes,1">
+              </div>
+              <div class="input-item">
+                <label for="boolean-false-values">False Values (comma-separated):</label>
+                <input type="text" id="boolean-false-values" value="false,no,0">
+              </div>
+            </div>
+          </div>
+          
+          <div id="number-options" class="transform-options" style="display: none;">
+            <h5>Number Transformer Options</h5>
+            <p>The number transformer will automatically detect and convert numeric values.</p>
+          </div>
+          
+          <div id="custom-options" class="transform-options" style="display: none;">
+            <h5>Custom Transformer</h5>
+            <p>Define a custom transformer function:</p>
+            <textarea id="custom-function" class="transform-function" placeholder="// Custom transform function
 // Example: (value, context) => {
-//   return typeof value === 'string' ? value.toUpperCase() : value;
+//   // context contains: direction, nodeName, nodeType, etc.
+//   if (context.direction === 'xml-to-json') {
+//     return typeof value === 'string' ? value.toUpperCase() : value;
+//   }
+//   return value;
 // }"></textarea>
           </div>
         </div>
