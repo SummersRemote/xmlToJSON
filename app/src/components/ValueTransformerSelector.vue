@@ -3,12 +3,12 @@
     <legend>Value Transformers</legend>
     
     <!-- List of active transformers -->
-    <div v-if="config.valueTransforms.length === 0" class="no-transformers">
-      No value transformers configured. Add one below.
-    </div>
+    <div v-if="config.valueTransformerConfigs.length === 0" class="no-transformers">
+  No value transformers configured. Add one below.
+</div>
     
-    <div v-for="(transformer, index) in config.valueTransforms" :key="index" class="transformer-item">
-      <div class="transformer-header">
+<div v-for="(transformer, index) in config.valueTransformerConfigs" :key="index" class="transformer-item">
+  <div class="transformer-header">
         <span class="transformer-type">{{ getTransformerTypeName(transformer) }}</span>
         <div class="transformer-controls">
           <button 
@@ -203,59 +203,30 @@ function prepareNewTransformer() {
 
 // Add the newly configured transformer
 function addTransformer() {
-  if (!newTransformerConfig.value) return
+  if (!newTransformer.value) return;
   
-  // Create an instance of the appropriate transformer class based on the type
-  let transformerInstance
-
-  switch (newTransformerConfig.value.type) {
-    case 'BooleanTransformer':
-      transformerInstance = new BooleanTransformer(newTransformerConfig.value.options)
-      break
-    case 'NumberTransformer':
-      transformerInstance = new NumberTransformer(newTransformerConfig.value.options)
-      break
-    case 'StringReplaceTransformer':
-      transformerInstance = new StringReplaceTransformer(newTransformerConfig.value.options)
-      break
-    case 'DateTransformer':
-      transformerInstance = new DateTransformer(newTransformerConfig.value.options)
-      break
-    default:
-      console.error('Unknown transformer type:', newTransformerConfig.value.type)
-      return
-  }
-  
-  // Add the transformer instance to the config
-  config.valueTransforms.push(transformerInstance)
-  
-  // Add the configuration to our tracking array
-  transformerConfigs.push({...newTransformerConfig.value})
+  // Add a copy of the configured transformer to the config
+  config.valueTransformerConfigs.push({...newTransformer.value});
   
   // Reset the selection
-  selectedTransformerType.value = ''
-  newTransformerConfig.value = null
+  selectedTransformerType.value = '';
+  newTransformer.value = null;
 }
 
 // Remove a transformer
 function removeTransformer(index) {
-  config.valueTransforms.splice(index, 1)
-  transformerConfigs.splice(index, 1)
+  config.valueTransformerConfigs.splice(index, 1);
 }
 
 // Move a transformer up or down
 function moveTransformer(index, direction) {
-  const newIndex = index + direction
-  if (newIndex < 0 || newIndex >= config.valueTransforms.length) return
+  const newIndex = index + direction;
+  if (newIndex < 0 || newIndex >= config.valueTransformerConfigs.length) return;
   
-  // Swap the transformers in both arrays
-  const transformer = config.valueTransforms[index]
-  config.valueTransforms[index] = config.valueTransforms[newIndex]
-  config.valueTransforms[newIndex] = transformer
-  
-  const transformerConfig = transformerConfigs[index]
-  transformerConfigs[index] = transformerConfigs[newIndex]
-  transformerConfigs[newIndex] = transformerConfig
+  // Swap the transformers
+  const transformer = config.valueTransformerConfigs[index];
+  config.valueTransformerConfigs[index] = config.valueTransformerConfigs[newIndex];
+  config.valueTransformerConfigs[newIndex] = transformer;
 }
 
 // Update transformer when configuration changes

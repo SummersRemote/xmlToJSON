@@ -53,10 +53,10 @@ import { useConfig } from './composables/useConfig'
 import ConfigEditor from './components/ConfigEditor.vue'
 import TransformerInterface from './components/TransformerInterface.vue'
 
-const { config } = useConfig()
+const { config, createTransformer } = useConfig();
 
 // Keep track of the active view
-const activeView = ref('transformer') // Default to transformer view
+const activeView = ref('config') // Default to transformer view
 
 // Format the configuration for display
 const formattedConfig = computed(() => {
