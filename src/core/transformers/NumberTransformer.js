@@ -1,3 +1,5 @@
+import ValueTransformer from './ValueTransformer.js';
+
 /**
  * Transforms string values to number types
  */

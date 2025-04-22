@@ -44,7 +44,7 @@ import { ref } from 'vue'
 import GeneralSettings from './GeneralSettings.vue'
 import OutputOptions from './OutputOptions.vue'
 import PropNameEditor from './PropNameEditor.vue'
-import TransformerSelector from './TransformerSelector.vue'
+import TransformerSelector from './ValueTransformerSelector.vue'
 import { useConfig } from '../composables/useConfig'
 
 // Get config and resetConfig function

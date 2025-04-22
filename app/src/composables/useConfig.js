@@ -29,7 +29,7 @@ const defaultConfig = {
     processing: '@processing',
     children: '@children'
   },
-  valueTransformers: []
+  valueTransforms: []
 }
 
 // Create a reactive config object

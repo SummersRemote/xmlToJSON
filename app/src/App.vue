@@ -1,32 +1,62 @@
 <template>
   <div class="app-container">
     <header>
-      <h1>XMLJSONTransformer Configuration</h1>
+      <h1>XMLJSONTransformer</h1>
+      <div class="view-tabs">
+        <button 
+          @click="activeView = 'config'" 
+          :class="{ active: activeView === 'config' }"
+          class="view-tab"
+        >
+          Configuration
+        </button>
+        
+        <button 
+          @click="activeView = 'transformer'" 
+          :class="{ active: activeView === 'transformer' }"
+          class="view-tab"
+        >
+          Transformer
+        </button>
+
+      </div>
     </header>
     
     <main>
-      <div class="config-editor">
-        <ConfigEditor />
+      <!-- Transformer view -->
+      <div v-if="activeView === 'transformer'" class="transformer-view">
+        <TransformerInterface />
       </div>
       
-      <div class="config-output">
-        <h2>Configuration Output</h2>
-        <pre>{{ formattedConfig }}</pre>
+      <!-- Configuration view -->
+      <div v-if="activeView === 'config'" class="config-view">
+        <div class="config-editor">
+          <ConfigEditor />
+        </div>
+        
+        <div class="config-output">
+          <h2>Configuration Output</h2>
+          <pre>{{ formattedConfig }}</pre>
+        </div>
       </div>
     </main>
     
     <footer>
-      <p>XMLJSONTransformer Configuration Editor</p>
+      <p>XMLJSONTransformer Configuration & Transformation Tool</p>
     </footer>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useConfig } from './composables/useConfig'
 import ConfigEditor from './components/ConfigEditor.vue'
+import TransformerInterface from './components/TransformerInterface.vue'
 
 const { config } = useConfig()
+
+// Keep track of the active view
+const activeView = ref('transformer') // Default to transformer view
 
 // Format the configuration for display
 const formattedConfig = computed(() => {
@@ -69,6 +99,9 @@ header {
   margin-bottom: 2rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 header h1 {
@@ -76,14 +109,37 @@ header h1 {
   margin: 0;
 }
 
+.view-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-tab {
+  padding: 0.6rem 1.2rem;
+  background-color: var(--light-gray);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.view-tab.active {
+  background-color: var(--primary-color);
+  color: white;
+}
+
 main {
+  min-height: 70vh;
+}
+
+.config-view {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 2rem;
 }
 
-
-.config-editor, .config-output {
+.transformer-view, .config-editor, .config-output {
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -158,12 +214,27 @@ footer {
 }
 
 @media (max-width: 900px) {
-  main {
+  .config-view {
     grid-template-columns: 1fr;
   }
   
   .config-output {
     margin-top: 1rem;
+  }
+  
+  header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  
+  .view-tabs {
+    width: 100%;
+  }
+  
+  .view-tab {
+    flex: 1;
+    text-align: center;
   }
 }
 </style>
