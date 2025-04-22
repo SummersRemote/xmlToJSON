@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 
-const config = reactive({
+// Default configuration to use for resets
+const defaultConfig = {
   preserveNamespaces: true,
   preserveComments: true,
   preserveProcessingInstr: true,
@@ -29,8 +30,28 @@ const config = reactive({
     children: '@children'
   },
   valueTransformers: []
-})
+}
+
+// Create a reactive config object
+const config = reactive({...defaultConfig})
 
 export function useConfig() {
-  return { config }
+  // Function to reset config to defaults
+  const resetConfig = () => {
+    // Clear all properties
+    Object.keys(config).forEach(key => {
+      delete config[key]
+    })
+    
+    // Copy the defaults back in
+    Object.entries(defaultConfig).forEach(([key, value]) => {
+      if (typeof value === 'object' && value !== null) {
+        config[key] = JSON.parse(JSON.stringify(value)) // Deep copy
+      } else {
+        config[key] = value
+      }
+    })
+  }
+  
+  return { config, resetConfig }
 }
