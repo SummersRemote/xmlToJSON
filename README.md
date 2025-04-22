@@ -18,6 +18,7 @@ A JavaScript utility class for bidirectional transformation between XML and JSON
 - [Mixed Content Handling](#mixed-content-handling)
 - [Advanced Features](#advanced-features)
   - [Path Navigation](#path-navigation)
+  - [Converting Standard JSON](#standard-json-converter)
   - [Schema Generation](#schema-generation)
   - [Value Transformers](#value-transformers)
 - [Examples](#examples)
@@ -324,6 +325,150 @@ const firstBookTitle = transformer.getPath(json, "catalog.@children[0].book.@chi
 // Get attribute value
 const firstBookId = transformer.getPath(json, "catalog.@children[0].book.@attrs.id.@val");
 ```
+
+
+### Standard JSON Converter
+
+The `StandardJSONConverter` provides a way to convert regular JSON objects into the specialized format required by XMLJSONTransformer. This makes it easy to transform any standard JSON data (like API responses or database records) to XML without having to manually restructure it.
+
+#### Basic Usage
+
+```javascript
+import { XMLJSONTransformer, StandardJSONConverter } from 'xmltojson';
+
+// Your standard JSON data
+const data = {
+  "name": "Alice Johnson",
+  "age": 30,
+  "email": "alice.johnson@example.com",
+  "skills": ["JavaScript", "Python", "SQL"]
+};
+
+// Convert to XMLJSONTransformer format
+const xmlFormat = StandardJSONConverter.convert(data, "person");
+
+// Create an XML string
+const transformer = new XMLJSONTransformer();
+const xml = transformer.jsonToXML(xmlFormat);
+
+console.log(xml);
+// Outputs:
+// <person>
+//   <name>Alice Johnson</name>
+//   <age>30</age>
+//   <email>alice.johnson@example.com</email>
+//   <skills>
+//     <skill>JavaScript</skill>
+//     <skill>Python</skill>
+//     <skill>SQL</skill>
+//   </skills>
+// </person>
+```
+
+#### Root Element Configuration
+
+You can configure the root element in three ways:
+
+##### 1. Default Root (No Configuration)
+
+```javascript
+const xmlFormat = StandardJSONConverter.convert(data);
+// Uses "root" as the element name
+```
+
+##### 2. Simple String Root
+
+```javascript
+const xmlFormat = StandardJSONConverter.convert(data, "person");
+// Uses "person" as the element name
+```
+
+##### 3. Detailed Root Configuration
+
+```javascript
+const xmlFormat = StandardJSONConverter.convert(data, {
+  name: "person",                       // Root element name
+  ns: "http://example.org/person",      // Namespace URI
+  prefix: "p",                          // Namespace prefix
+  attributes: {                         // Root element attributes
+    id: "12345",
+    created: "2023-04-22",
+    type: {                            // Complex attribute with namespace
+      val: "employee",
+      ns: "http://example.org/types",
+      prefix: "t"
+    }
+  }
+});
+```
+
+This produces XML with namespace and attributes:
+
+```xml
+<p:person xmlns:p="http://example.org/person" 
+          id="12345" 
+          created="2023-04-22" 
+          t:type="employee" xmlns:t="http://example.org/types">
+  <!-- content -->
+</p:person>
+```
+
+#### Features
+
+- **Automatic Array Handling**: For arrays (like "skills"), the converter automatically creates singular element names for array items ("skill")
+- **Nested Objects**: Maintains the hierarchy of nested objects
+- **Data Type Conversion**: Converts all values to strings suitable for XML
+- **Null & Undefined Handling**: Safely handles null or undefined values
+- **Complex Structures**: Supports arrays of objects and deeply nested structures
+
+#### Handling Different Data Types
+
+- **Primitive Values** (strings, numbers, booleans): Converted to string values
+- **Arrays**: Converted to parent-child elements with singular names
+- **Objects**: Converted to nested elements preserving hierarchy
+- **Null/Undefined**: Converted to empty strings
+
+#### Array Element Naming
+
+For arrays, the converter automatically creates singular element names:
+
+- "skills" array items become "skill" elements
+- "addresses" array items become "address" elements
+- "data" array items become "dataItem" elements (if no plural 's' is found)
+
+#### Example with Complex Data
+
+```javascript
+const orderData = {
+  "id": "order-12345",
+  "items": [
+    {
+      "productId": "prod-101",
+      "name": "Smartphone",
+      "price": 599.99
+    },
+    {
+      "productId": "prod-202",
+      "name": "Headphones",
+      "price": 129.99
+    }
+  ],
+  "customer": {
+    "name": "John Smith",
+    "email": "john@example.com"
+  }
+};
+
+const xmlFormat = StandardJSONConverter.convert(orderData, "order");
+const transformer = new XMLJSONTransformer();
+const xml = transformer.jsonToXML(xmlFormat);
+
+// Output will maintain all the hierarchical structure in XML format
+```
+
+
+
+
 
 ### Schema Generation
 
