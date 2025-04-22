@@ -2,12 +2,12 @@
   <div class="transformer-form">
     <div class="form-group">
       <label>True Values:</label>
-      <input type="text" v-model="trueValues" placeholder="true, yes, 1" />
+      <input type="text" v-model="trueValuesString" placeholder="true, yes, 1" />
       <small>Values that will be converted to true (comma-separated)</small>
     </div>
     <div class="form-group">
       <label>False Values:</label>
-      <input type="text" v-model="falseValues" placeholder="false, no, 0" />
+      <input type="text" v-model="falseValuesString" placeholder="false, no, 0" />
       <small>Values that will be converted to false (comma-separated)</small>
     </div>
   </div>
@@ -16,29 +16,74 @@
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps(['modelValue'])
-const emit = defineEmits(['update:modelValue'])
-
-const trueValues = computed({
-  get: () => props.modelValue.options.trueValues.join(', '),
-  set: (val) => emit('update:modelValue', {
-    ...props.modelValue,
-    options: {
-      ...props.modelValue.options,
-      trueValues: val.split(',').map(v => v.trim())
-    }
-  })
+const props = defineProps({
+  modelValue: {
+    type: Object,
+    required: true,
+    default: () => ({
+      type: 'BooleanTransformer',
+      options: {
+        trueValues: ['true', 'yes', '1'],
+        falseValues: ['false', 'no', '0']
+      }
+    })
+  }
 })
 
-const falseValues = computed({
-  get: () => props.modelValue.options.falseValues.join(', '),
-  set: (val) => emit('update:modelValue', {
-    ...props.modelValue,
-    options: {
-      ...props.modelValue.options,
-      falseValues: val.split(',').map(v => v.trim())
+const emit = defineEmits(['update:modelValue'])
+
+// Ensure the options object exists
+const ensureOptions = () => {
+  if (!props.modelValue.options) {
+    return {
+      ...props.modelValue,
+      options: {
+        trueValues: ['true', 'yes', '1'],
+        falseValues: ['false', 'no', '0']
+      }
     }
-  })
+  }
+  return props.modelValue
+}
+
+// Convert array to comma-separated string for the input
+const trueValuesString = computed({
+  get: () => {
+    const model = ensureOptions()
+    return Array.isArray(model.options.trueValues) 
+      ? model.options.trueValues.join(', ')
+      : 'true, yes, 1'
+  },
+  set: (val) => {
+    const model = ensureOptions()
+    emit('update:modelValue', {
+      ...model,
+      options: {
+        ...model.options,
+        trueValues: val.split(',').map(v => v.trim())
+      }
+    })
+  }
+})
+
+// Convert array to comma-separated string for the input
+const falseValuesString = computed({
+  get: () => {
+    const model = ensureOptions()
+    return Array.isArray(model.options.falseValues) 
+      ? model.options.falseValues.join(', ')
+      : 'false, no, 0'
+  },
+  set: (val) => {
+    const model = ensureOptions()
+    emit('update:modelValue', {
+      ...model,
+      options: {
+        ...model.options,
+        falseValues: val.split(',').map(v => v.trim())
+      }
+    })
+  }
 })
 </script>
 
