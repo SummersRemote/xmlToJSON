@@ -9,7 +9,7 @@
     
 <div v-for="(transformer, index) in config.valueTransformerConfigs" :key="index" class="transformer-item">
   <div class="transformer-header">
-        <span class="transformer-type">{{ getTransformerTypeName(transformer) }}</span>
+        <span class="transformer-type">{{ transformer.type }}</span>
         <div class="transformer-controls">
           <button 
             @click="moveTransformer(index, -1)" 
@@ -19,7 +19,7 @@
           >↑</button>
           <button 
             @click="moveTransformer(index, 1)" 
-            :disabled="index === config.valueTransforms.length - 1" 
+            :disabled="index === config.valueTransformerConfigs.length - 1" 
             title="Move down"
             class="control-btn"
           >↓</button>
@@ -32,7 +32,7 @@
       </div>
       
       <component
-        :is="getComponent(getTransformerTypeName(transformer))"
+        :is="getComponent(transformer.type)"
         v-model="transformerConfigs[index]"
         @update:modelValue="updateTransformer(index, $event)"
       />
@@ -88,7 +88,7 @@ import { useConfig } from '../composables/useConfig'
 import BooleanTransformerComponent from './transformers/BooleanTransformer.vue'
 import NumberTransformerComponent from './transformers/NumberTransformer.vue'
 import StringReplaceTransformerComponent from './transformers/StringReplaceTransformer.vue'
-import DateTransformerComponent from './transformers/DateTransformer.vue'
+// import DateTransformerComponent from './transformers/DateTransformer.vue'
 
 // Import transformer classes from the library
 import { 
@@ -145,7 +145,7 @@ function getTransformerTypeName(transformer) {
   if (transformer instanceof BooleanTransformer) return 'BooleanTransformer'
   if (transformer instanceof NumberTransformer) return 'NumberTransformer'
   if (transformer instanceof StringReplaceTransformer) return 'StringReplaceTransformer'
-  if (transformer instanceof DateTransformer) return 'DateTransformer'
+  // if (transformer instanceof DateTransformer) return 'DateTransformer'
   return 'Unknown'
 }
 
@@ -154,7 +154,7 @@ function initializeTransformerConfigs() {
   transformerConfigs.length = 0 // Clear array
   
   // Create a configuration object for each transformer
-  config.valueTransforms.forEach(transformer => {
+  config.valueTransformerConfigs.forEach(transformer => {
     const type = getTransformerTypeName(transformer)
     // Extract options from the transformer instance
     const options = { ...transformer }
@@ -175,8 +175,8 @@ function getComponent(type) {
       return NumberTransformerComponent
     case 'StringReplaceTransformer':
       return StringReplaceTransformerComponent
-    case 'DateTransformer':
-      return DateTransformerComponent
+    // case 'DateTransformer':
+    //   return DateTransformerComponent
     default:
       return null
   }
@@ -203,14 +203,15 @@ function prepareNewTransformer() {
 
 // Add the newly configured transformer
 function addTransformer() {
-  if (!newTransformer.value) return;
+  if (!newTransformerConfig.value) return;
   
   // Add a copy of the configured transformer to the config
-  config.valueTransformerConfigs.push({...newTransformer.value});
+  config.valueTransformerConfigs.push({...newTransformerConfig.value});
   
   // Reset the selection
   selectedTransformerType.value = '';
-  newTransformer.value = null;
+  newTransformerConfig.value = null;
+  
 }
 
 // Remove a transformer
@@ -231,8 +232,14 @@ function moveTransformer(index, direction) {
 
 // Update transformer when configuration changes
 function updateTransformer(index, newConfig) {
+
+  console.log(newConfig)
+
+
   // Create an instance of the appropriate transformer class based on the type
   let transformerInstance
+
+  console.log(newConfig)
 
   switch (newConfig.type) {
     case 'BooleanTransformer':
@@ -245,7 +252,7 @@ function updateTransformer(index, newConfig) {
       transformerInstance = new StringReplaceTransformer(newConfig.options)
       break
     case 'DateTransformer':
-      transformerInstance = new DateTransformer(newConfig.options)
+      // transformerInstance = new DateTransformer(newConfig.options)
       break
     default:
       console.error('Unknown transformer type:', newConfig.type)
