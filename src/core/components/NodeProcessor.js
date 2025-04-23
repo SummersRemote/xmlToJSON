@@ -1,11 +1,12 @@
+import { TransformerError } from "../errors/TransformerError.js";
+import { ErrorCodes } from "../errors/ErrorCodes.js";
+import ValueTransformer from "../transformers/ValueTransformer.js";
+
 /**
  * NodeProcessor
  *
  * Handles processing of different node types
  */
-
-import ValueTransformer from "../transformers/ValueTransformer.js";
-
 class NodeProcessor {
   /**
    * Creates a new NodeProcessor
@@ -133,17 +134,33 @@ class NodeProcessor {
   createContext(options) {
     // Ensure required properties are present
     if (!options.direction) {
-      console.warn(
-        'Context created without direction, defaulting to "unknown"'
+      console.error(
+        `[${ErrorCodes.CONFIG_ERROR}] Context created without direction`
+      );
+      throw new TransformerError(
+        "Context created without direction",
+        ErrorCodes.CONFIG_ERROR
       );
     }
 
     if (!options.nodeName) {
-      console.warn('Context created without nodeName, defaulting to "unknown"');
+      console.error(
+        `[${ErrorCodes.CONFIG_ERROR}] Context created without nodeName`
+      );
+      throw new TransformerError(
+        "Context created without nodeName",
+        ErrorCodes.CONFIG_ERROR
+      );
     }
 
     if (options.nodeType === undefined) {
-      console.warn("Context created without nodeType, defaulting to 0");
+      console.error(
+        `[${ErrorCodes.CONFIG_ERROR}] Context created without nodeType`
+      );
+      throw new TransformerError(
+        "Context created without nodeType",
+        ErrorCodes.CONFIG_ERROR
+      );
     }
 
     // Set isAttribute automatically if nodeType is ATTRIBUTE_NODE
@@ -153,9 +170,9 @@ class NodeProcessor {
 
     // Create standard context with required properties
     return {
-      direction: options.direction || "unknown",
-      nodeName: options.nodeName || "unknown",
-      nodeType: options.nodeType !== undefined ? options.nodeType : 0,
+      direction: options.direction,
+      nodeName: options.nodeName,
+      nodeType: options.nodeType,
       namespaceURI: options.namespaceURI || "",
       isAttribute: isAttribute,
       parentContext: options.parentContext || null,
@@ -182,6 +199,7 @@ class NodeProcessor {
             ...contextOrOptions,
             direction: contextOrOptions.direction || "unknown",
             nodeName: contextOrOptions.nodeName || "unknown",
+            nodeType: contextOrOptions.nodeType || 0,
           });
 
     // Skip transforming if no transformers are configured
@@ -193,8 +211,26 @@ class NodeProcessor {
 
     // Apply each transform in sequence
     for (const transform of this.valueTransforms) {
-      if (typeof transform.process === "function") {
+      if (typeof transform.process !== "function") {
+        console.error(
+          `[${ErrorCodes.TRANSFORM_ERROR}] Invalid transformer: missing process method`
+        );
+        throw new TransformerError(
+          "Invalid transformer: missing process method",
+          ErrorCodes.TRANSFORM_ERROR
+        );
+      }
+
+      try {
         result = transform.process(result, context);
+      } catch (error) {
+        console.error(
+          `[${ErrorCodes.TRANSFORM_ERROR}] Transform failed: ${error.message}`
+        );
+        throw new TransformerError(
+          `Transform failed: ${error.message}`,
+          ErrorCodes.TRANSFORM_ERROR
+        );
       }
     }
 

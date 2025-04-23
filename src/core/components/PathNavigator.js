@@ -1,3 +1,6 @@
+import { TransformerError } from "../errors/TransformerError.js";
+import { ErrorCodes } from "../errors/ErrorCodes.js";
+
 /**
  * PathNavigator
  *
@@ -21,77 +24,111 @@ class PathNavigator {
    * @returns {any} - Value at path or fallback
    */
   getPath(obj, path, fallback = undefined) {
-    if (!obj || !path) return fallback;
-
-    const parts = path.split(".");
-    const childrenKey = this.config.propNames.children;
-
-    // Store 'this' reference for use in the inner function
-    const self = this;
-
-    function traverse(node, keys) {
-      if (keys.length === 0) return node;
-
-      const [key, ...rest] = keys;
-
-      // Validate key syntax - ensure it's a valid property name with optional array index
-      const match = key.match(/^([a-zA-Z0-9_@]+)(?:\[(\d+)\])?$/);
-      if (!match) return fallback; // Return fallback for invalid syntax
-
-      const [, baseKey, index] = match;
-
-      const val = node?.[baseKey];
-      if (val !== undefined) {
-        if (Array.isArray(val)) {
-          if (index !== undefined) {
-            const indexValue = val[Number(index)];
-            return indexValue !== undefined
-              ? traverse(indexValue, rest)
-              : fallback;
-          } else {
-            return val.map((child) => traverse(child, rest));
-          }
-        } else {
-          return traverse(val, rest);
-        }
-      }
-
-      // Try searching children if key not directly present
-      if (node && Array.isArray(node[childrenKey])) {
-        const matches = node[childrenKey]
-          .map((child) => child?.[baseKey])
-          .filter((v) => v !== undefined);
-
-        if (index !== undefined) {
-          const item = matches[Number(index)];
-          return item ? traverse(item, rest) : fallback;
-        }
-
-        if (matches.length === 0) {
-          // If we're at the end of our path, return an empty array for consistency
-          if (rest.length === 0) return [];
-          // Otherwise return fallback
-          return fallback;
-        }
-
-        return matches.map((child) => traverse(child, rest));
-      }
-
+    if (!obj) {
       return fallback;
     }
 
-    const result = traverse(obj, parts);
-
-    // Deep flatten helper
-    const deepFlatten = (arr) =>
-      Array.isArray(arr) ? arr.flatMap((el) => deepFlatten(el)) : [arr];
-
-    if (Array.isArray(result)) {
-      // Always return the flattened array, even if empty
-      return deepFlatten(result).filter((v) => v !== undefined);
+    if (!path || typeof path !== "string") {
+      console.error(
+        `[${ErrorCodes.INVALID_PATH}] Path must be a non-empty string`
+      );
+      throw new TransformerError(
+        "Path must be a non-empty string",
+        ErrorCodes.INVALID_PATH
+      );
     }
 
-    return result;
+    try {
+      const parts = path.split(".");
+      const childrenKey = this.config.propNames.children;
+
+      // Store 'this' reference for use in the inner function
+      const self = this;
+
+      function traverse(node, keys) {
+        if (keys.length === 0) return node;
+
+        const [key, ...rest] = keys;
+
+        // Validate key syntax - ensure it's a valid property name with optional array index
+        const match = key.match(/^([a-zA-Z0-9_@]+)(?:\[(\d+)\])?$/);
+        if (!match) {
+          console.error(
+            `[${ErrorCodes.INVALID_PATH}] Invalid path segment: ${key}`
+          );
+          throw new TransformerError(
+            `Invalid path segment: ${key}`,
+            ErrorCodes.INVALID_PATH
+          );
+        }
+
+        const [, baseKey, index] = match;
+
+        const val = node?.[baseKey];
+        if (val !== undefined) {
+          if (Array.isArray(val)) {
+            if (index !== undefined) {
+              const indexValue = val[Number(index)];
+              return indexValue !== undefined
+                ? traverse(indexValue, rest)
+                : fallback;
+            } else {
+              return val.map((child) => traverse(child, rest));
+            }
+          } else {
+            return traverse(val, rest);
+          }
+        }
+
+        // Try searching children if key not directly present
+        if (node && Array.isArray(node[childrenKey])) {
+          const matches = node[childrenKey]
+            .map((child) => child?.[baseKey])
+            .filter((v) => v !== undefined);
+
+          if (index !== undefined) {
+            const item = matches[Number(index)];
+            return item ? traverse(item, rest) : fallback;
+          }
+
+          if (matches.length === 0) {
+            // If we're at the end of our path, return an empty array for consistency
+            if (rest.length === 0) return [];
+            // Otherwise return fallback
+            return fallback;
+          }
+
+          return matches.map((child) => traverse(child, rest));
+        }
+
+        return fallback;
+      }
+
+      const result = traverse(obj, parts);
+
+      // Deep flatten helper
+      const deepFlatten = (arr) =>
+        Array.isArray(arr) ? arr.flatMap((el) => deepFlatten(el)) : [arr];
+
+      if (Array.isArray(result)) {
+        // Always return the flattened array, even if empty
+        return deepFlatten(result).filter((v) => v !== undefined);
+      }
+
+      return result;
+    } catch (error) {
+      // If it's already a TransformerError, just re-throw it
+      if (error instanceof TransformerError) {
+        throw error;
+      }
+
+      // Otherwise, wrap it in a TransformerError
+      console.error(`[${ErrorCodes.PATH_ERROR}] ${error.message}`);
+      throw new TransformerError(
+        `Error navigating path '${path}': ${error.message}`,
+        ErrorCodes.PATH_ERROR
+      );
+    }
   }
 }
 

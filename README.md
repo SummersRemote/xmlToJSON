@@ -288,6 +288,42 @@ const xmlRestored = transformer.jsonToXML(json);
 // <paragraph>This has <bold>mixed</bold> content.</paragraph>
 ```
 
+## Error Handling
+
+XMLJSONTransformer provides consistent error handling across the library. All errors thrown by the library are instances of `TransformerError` with a specific error code for easier debugging.
+
+### Example Error Handling
+
+```javascript
+import XMLJSONTransformer, { TransformerError, ErrorCodes } from 'xmltojson';
+
+const transformer = new XMLJSONTransformer();
+
+try {
+  const jsonObj = transformer.xmlToJSON('<invalid>xml</unclosed>');
+  // Process the result
+} catch (error) {
+  if (error instanceof TransformerError) {
+    console.error(`Error code: ${error.code}, Message: ${error.message}`);
+    
+    // Handle specific error types
+    switch (error.code) {
+      case ErrorCodes.XML_PARSE_ERROR:
+        console.error('XML parsing failed. Check your XML syntax.');
+        break;
+      case ErrorCodes.XML_INVALID_INPUT:
+        console.error('Invalid XML input provided.');
+        break;
+      // Handle other error types
+      default:
+        console.error('Unknown transformation error occurred.');
+    }
+  } else {
+    console.error('Unexpected error:', error);
+  }
+}
+
+
 ## Advanced Features
 
 ### Path Navigation

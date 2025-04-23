@@ -1,3 +1,5 @@
+import { TransformerError } from "../errors/TransformerError.js";
+import { ErrorCodes } from "../errors/ErrorCodes.js";
 /**
  * XMLToJSONConverter
  *
@@ -23,19 +25,55 @@ class XMLToJSONConverter {
    * @returns {Object} - JSON representation
    */
   convert(xmlString) {
-    // Create a DOM parser
-    const parser = this.domEnv.createParser();
-    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
-
-    // Check for parsing errors
-    const parserError = xmlDoc.querySelector("parsererror");
-    if (parserError) {
-      throw new Error(`XML parsing error: ${parserError.textContent}`);
+    if (!xmlString || typeof xmlString !== "string") {
+      console.error(
+        `[${ErrorCodes.XML_INVALID_INPUT}] XML input must be a non-empty string`
+      );
+      throw new TransformerError(
+        "XML input must be a non-empty string",
+        ErrorCodes.XML_INVALID_INPUT
+      );
     }
 
-    // Start with the document element
-    const rootNode = xmlDoc.documentElement;
-    return this.processNode(rootNode);
+    try {
+      // Create a DOM parser
+      const parser = this.domEnv.createParser();
+      const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+
+      // Check for parsing errors
+      const parserError = xmlDoc.querySelector("parsererror");
+      if (parserError) {
+        const errorMsg = `XML parsing error: ${parserError.textContent}`;
+        console.error(`[${ErrorCodes.XML_PARSE_ERROR}] ${errorMsg}`);
+        throw new TransformerError(errorMsg, ErrorCodes.XML_PARSE_ERROR);
+      }
+
+      // Start with the document element
+      const rootNode = xmlDoc.documentElement;
+      if (!rootNode) {
+        console.error(
+          `[${ErrorCodes.XML_ERROR}] XML document has no root element`
+        );
+        throw new TransformerError(
+          "XML document has no root element",
+          ErrorCodes.XML_ERROR
+        );
+      }
+
+      return this.processNode(rootNode);
+    } catch (error) {
+      // If it's already a TransformerError, just re-throw it
+      if (error instanceof TransformerError) {
+        throw error;
+      }
+
+      // Otherwise, wrap it in a TransformerError
+      console.error(`[${ErrorCodes.XML_ERROR}] ${error.message}`);
+      throw new TransformerError(
+        `Failed to convert XML to JSON: ${error.message}`,
+        ErrorCodes.XML_ERROR
+      );
+    }
   }
 
   /**

@@ -1,3 +1,6 @@
+import { TransformerError } from "../errors/TransformerError.js";
+import { ErrorCodes } from "../errors/ErrorCodes.js";
+
 /**
  * JSONToXMLConverter
  *
@@ -23,61 +26,118 @@ class JSONToXMLConverter {
    * @returns {string} - XML string representation
    */
   convert(jsonObj) {
-    // Create a new XML document
-    const doc = this.domEnv.createDocument(null, null, null);
-
-    // Get the root element name
-    const rootElName = Object.keys(jsonObj).find((key) => !key.startsWith("@"));
-    if (!rootElName) {
-      throw new Error("Invalid JSON: No root element found");
+    if (!jsonObj || typeof jsonObj !== "object") {
+      console.error(
+        `[${ErrorCodes.JSON_INVALID_INPUT}] JSON input must be a non-empty object`
+      );
+      throw new TransformerError(
+        "JSON input must be a non-empty object",
+        ErrorCodes.JSON_INVALID_INPUT
+      );
     }
 
-    const rootJSON = jsonObj[rootElName];
+    try {
+      // Create a new XML document
+      const doc = this.domEnv.createDocument(null, null, null);
 
-    // Track the namespaces we've already declared
-    const declaredNamespaces = new Map();
+      // Get the root element name
+      const rootElName = Object.keys(jsonObj).find(
+        (key) => !key.startsWith("@")
+      );
+      if (!rootElName) {
+        console.error(
+          `[${ErrorCodes.JSON_ERROR}] Invalid JSON: No root element found`
+        );
+        throw new TransformerError(
+          "Invalid JSON: No root element found",
+          ErrorCodes.JSON_ERROR
+        );
+      }
 
-    // Create the root element
-    const rootEl = this.createElement(doc, rootElName, rootJSON);
+      const rootJSON = jsonObj[rootElName];
+      if (!rootJSON || typeof rootJSON !== "object") {
+        console.error(
+          `[${ErrorCodes.JSON_ERROR}] Invalid JSON: Root element must be an object`
+        );
+        throw new TransformerError(
+          "Invalid JSON: Root element must be an object",
+          ErrorCodes.JSON_ERROR
+        );
+      }
 
-    // Create root context
-    const rootContext = this.nodeProcessor.createContext({
-      direction: "json-to-xml",
-      nodeName: rootElName,
-      nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
-      namespaceURI: rootJSON[this.config.propNames.namespace] || "",
-      metadata: {
-        isRoot: true,
-        prefix: rootJSON[this.config.propNames.prefix] || null,
-      },
-    });
+      // Track the namespaces we've already declared
+      const declaredNamespaces = new Map();
 
-    // Declare namespaces on the root element if preserving them
-    if (this.config.preserveNamespaces) {
-      this.collectAndDeclareNamespaces(rootEl, jsonObj, declaredNamespaces);
+      // Create the root element
+      const rootEl = this.createElement(doc, rootElName, rootJSON);
+
+      // Create root context
+      const rootContext = this.nodeProcessor.createContext({
+        direction: "json-to-xml",
+        nodeName: rootElName,
+        nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
+        namespaceURI: rootJSON[this.config.propNames.namespace] || "",
+        metadata: {
+          isRoot: true,
+          prefix: rootJSON[this.config.propNames.prefix] || null,
+        },
+      });
+
+      // Declare namespaces on the root element if preserving them
+      if (this.config.preserveNamespaces) {
+        this.collectAndDeclareNamespaces(rootEl, jsonObj, declaredNamespaces);
+      }
+
+      // Process the root element
+      this.processElement(
+        doc,
+        rootEl,
+        rootJSON,
+        declaredNamespaces,
+        rootContext
+      );
+
+      // Add root to document
+      doc.appendChild(rootEl);
+
+      // Serialize to XML
+      const serializer = this.domEnv.createSerializer();
+      if (!serializer) {
+        console.error(
+          `[${ErrorCodes.DOM_ERROR}] Could not create XML serializer`
+        );
+        throw new TransformerError(
+          "Could not create XML serializer",
+          ErrorCodes.DOM_ERROR
+        );
+      }
+
+      let xmlString = serializer.serializeToString(doc);
+
+      // Add XML declaration
+      if (this.config.outputOptions.xml.declaration) {
+        xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlString;
+      }
+
+      // Pretty print if configured
+      if (this.config.outputOptions.prettyPrint) {
+        xmlString = this.prettyPrintXML(xmlString);
+      }
+
+      return xmlString;
+    } catch (error) {
+      // If it's already a TransformerError, just re-throw it
+      if (error instanceof TransformerError) {
+        throw error;
+      }
+
+      // Otherwise, wrap it in a TransformerError
+      console.error(`[${ErrorCodes.JSON_ERROR}] ${error.message}`);
+      throw new TransformerError(
+        `Failed to convert JSON to XML: ${error.message}`,
+        ErrorCodes.JSON_ERROR
+      );
     }
-
-    // Process the root element
-    this.processElement(doc, rootEl, rootJSON, declaredNamespaces, rootContext);
-
-    // Add root to document
-    doc.appendChild(rootEl);
-
-    // Serialize to XML
-    const serializer = this.domEnv.createSerializer();
-    let xmlString = serializer.serializeToString(doc);
-
-    // Add XML declaration
-    if (this.config.outputOptions.xml.declaration) {
-      xmlString = '<?xml version="1.0" encoding="UTF-8"?>\n' + xmlString;
-    }
-
-    // Pretty print if configured
-    if (this.config.outputOptions.prettyPrint) {
-      xmlString = this.prettyPrintXML(xmlString);
-    }
-
-    return xmlString;
   }
 
   /**
