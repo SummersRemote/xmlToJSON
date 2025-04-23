@@ -227,7 +227,7 @@ class XMLToJSONConverter {
         continue;
       }
 
-      // Process attribute name (strip prefix if configured)
+      // Process attribute name
       let attrName = attr.name;
       let prefix = null;
 
