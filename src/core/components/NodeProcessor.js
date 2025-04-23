@@ -4,7 +4,7 @@
  * Handles processing of different node types
  */
 
-import ValueTransformer from '../transformers/ValueTransformer.js';
+import ValueTransformer from "../transformers/ValueTransformer.js";
 
 class NodeProcessor {
   /**
@@ -16,11 +16,11 @@ class NodeProcessor {
     this.configManager = configManager;
     this.domEnv = domEnv;
     this.config = configManager.config;
-    
+
     // Get valueTransforms from config or use empty array
     this.valueTransforms = this.config.valueTransforms || [];
   }
-  
+
   /**
    * Check if a node has mixed content (both text and element nodes)
    * @param {Node} node - The DOM node to check
@@ -29,7 +29,8 @@ class NodeProcessor {
   hasMixedContent(node) {
     if (
       node.nodeType !== this.domEnv.nodeTypes.ELEMENT_NODE ||
-      !node.hasChildNodes()
+      !node.hasChildNodes() ||
+      !this.config.preserveTextNodes // Don't treat as mixed content if not preserving text
     ) {
       return false;
     }
@@ -94,7 +95,7 @@ class NodeProcessor {
       direction: direction,
     };
   }
-  
+
   /**
    * Transform a value using the transformer pipeline
    * @param {any} value - Value to transform
@@ -105,14 +106,14 @@ class NodeProcessor {
     if (value === undefined || value === null) {
       return value;
     }
-    
+
     let result = value;
-    
+
     // Apply each transform in sequence
     for (const transform of this.valueTransforms) {
       result = transform.process(result, context);
     }
-    
+
     return result;
   }
 

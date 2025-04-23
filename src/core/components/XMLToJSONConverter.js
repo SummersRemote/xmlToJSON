@@ -152,8 +152,8 @@ class XMLToJSONConverter {
    * @param {Object} context - Transform context
    */
   processRegularContent(nodeObj, node, context) {
-    // Add value if it exists
-    if (node.nodeValue) {
+    // Add value if it exists and we're preserving text nodes
+    if (node.nodeValue && this.config.preserveTextNodes) {
       // Get the raw value
       let value = node.nodeValue;
 
@@ -170,11 +170,12 @@ class XMLToJSONConverter {
 
       nodeObj[this.config.propNames.value] = value;
     } else if (
+      this.config.preserveTextNodes &&
       node.nodeType === this.domEnv.nodeTypes.ELEMENT_NODE &&
       node.childNodes.length === 1 &&
       node.childNodes[0].nodeType === this.domEnv.nodeTypes.TEXT_NODE
     ) {
-      // Simple text content case
+      // Simple text content case - only if preserveTextNodes is true
       let value = node.textContent;
 
       // Strip leading and trailing whitespace and newlines
@@ -189,8 +190,12 @@ class XMLToJSONConverter {
       }
 
       nodeObj[this.config.propNames.value] = value;
-    } else {
+    } else if (this.config.preserveTextNodes) {
+      // Initialize with empty string if preserving text nodes
       nodeObj[this.config.propNames.value] = "";
+    } else {
+      // When not preserving text nodes, don't set the value property at all
+      // This will cause it to be omitted in compact mode
     }
   }
 
@@ -274,7 +279,7 @@ class XMLToJSONConverter {
           break;
 
         case this.domEnv.nodeTypes.TEXT_NODE:
-          // Handle text nodes if configured to preserve them
+          // Only process text nodes if preserveTextNodes is true
           if (this.config.preserveTextNodes) {
             // Skip pure whitespace nodes if not preserving whitespace
             if (
@@ -317,7 +322,7 @@ class XMLToJSONConverter {
       }
     }
 
-    // Add text content as a value property if present and not already set
+    // Add text content as a value property if present and preserveTextNodes is true
     if (
       textContent &&
       this.config.preserveTextNodes &&
