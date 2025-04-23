@@ -50,16 +50,18 @@ class ConfigurationManager {
       outputOptions: {
         prettyPrint: true,
         indent: 3,
+        compact: true, // Moved to global level
+        removeEmptyValueNodes: true, // Moved to global level
 
         // JSON-specific options
         json: {
-          compact: true,
-          removeEmptyStrings: true,
+          // Format-specific options can go here
         },
 
         // XML-specific options
         xml: {
           declaration: true,
+          // Format-specific options can go here
         },
       },
 

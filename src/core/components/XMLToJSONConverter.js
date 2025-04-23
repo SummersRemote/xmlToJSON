@@ -78,7 +78,7 @@ class XMLToJSONConverter {
 
     // When using compact mode and node is empty, return an empty object for the element
     if (
-      this.config.outputOptions.json.compact &&
+      this.config.outputOptions.compact &&
       node.nodeType === this.domEnv.nodeTypes.ELEMENT_NODE &&
       !node.hasChildNodes() &&
       !node.hasAttributes()
@@ -123,8 +123,16 @@ class XMLToJSONConverter {
     }
 
     // Apply compact mode if enabled
-    if (this.config.outputOptions.json.compact) {
-      this.applyCompactMode(nodeObj);
+    this.applyCompactMode(nodeObj);
+
+    // If the node is completely empty after applying compact mode and removeEmptyValueNodes, 
+    // return a minimal object
+    if (
+      this.config.outputOptions.removeEmptyValueNodes &&
+      Object.keys(nodeObj).length === 0
+    ) {
+      result[nodeName] = {};
+      return result;
     }
 
     result[nodeName] = nodeObj;
@@ -152,8 +160,8 @@ class XMLToJSONConverter {
    * @param {Object} context - Transform context
    */
   processRegularContent(nodeObj, node, context) {
-    // Add value if it exists and we're preserving text nodes
-    if (node.nodeValue && this.config.preserveTextNodes) {
+    // Add value if it exists
+    if (node.nodeValue) {
       // Get the raw value
       let value = node.nodeValue;
 
@@ -170,12 +178,11 @@ class XMLToJSONConverter {
 
       nodeObj[this.config.propNames.value] = value;
     } else if (
-      this.config.preserveTextNodes &&
       node.nodeType === this.domEnv.nodeTypes.ELEMENT_NODE &&
       node.childNodes.length === 1 &&
       node.childNodes[0].nodeType === this.domEnv.nodeTypes.TEXT_NODE
     ) {
-      // Simple text content case - only if preserveTextNodes is true
+      // Simple text content case
       let value = node.textContent;
 
       // Strip leading and trailing whitespace and newlines
@@ -193,9 +200,6 @@ class XMLToJSONConverter {
     } else if (this.config.preserveTextNodes) {
       // Initialize with empty string if preserving text nodes
       nodeObj[this.config.propNames.value] = "";
-    } else {
-      // When not preserving text nodes, don't set the value property at all
-      // This will cause it to be omitted in compact mode
     }
   }
 
@@ -237,10 +241,10 @@ class XMLToJSONConverter {
         isAttribute: true,
       });
 
-      // Only add value property if not empty or if we're not removing empty strings
+      // Only add value property if not empty or if we're not removing empty value nodes
       if (
         attrValue !== "" ||
-        !this.config.outputOptions.json.removeEmptyStrings
+        !this.config.outputOptions.removeEmptyValueNodes
       ) {
         attrObj[this.config.propNames.value] = attrValue;
       }
@@ -339,8 +343,20 @@ class XMLToJSONConverter {
       nodeObj[this.config.propNames.value] = textContent;
     }
 
-    // Add child nodes if present
-    if (childNodes.length > 0) {
+    // Apply removeEmptyValueNodes to children if configured
+    if (this.config.outputOptions.removeEmptyValueNodes && childNodes.length > 0) {
+      // Filter out completely empty child nodes
+      const nonEmptyChildren = childNodes.filter(childNode => {
+        const childName = Object.keys(childNode)[0];
+        const childObj = childNode[childName];
+        // Keep only non-empty children
+        return Object.keys(childObj).length > 0;
+      });
+      
+      if (nonEmptyChildren.length > 0) {
+        nodeObj[this.config.propNames.children] = nonEmptyChildren;
+      }
+    } else if (childNodes.length > 0) {
       nodeObj[this.config.propNames.children] = childNodes;
     }
   }
@@ -352,31 +368,52 @@ class XMLToJSONConverter {
   applyCompactMode(nodeObj) {
     const propNames = this.config.propNames;
 
-    // Remove empty collections
-    if (Object.keys(nodeObj[propNames.attributes]).length === 0) {
-      delete nodeObj[propNames.attributes];
+    // Process attributes - remove any that have no value property if removeEmptyValueNodes is true
+    if (this.config.outputOptions.removeEmptyValueNodes && nodeObj[propNames.attributes]) {
+      for (const [attrName, attrObj] of Object.entries({...nodeObj[propNames.attributes]})) {
+        if (!attrObj.hasOwnProperty(propNames.value) || attrObj[propNames.value] === "") {
+          delete nodeObj[propNames.attributes][attrName];
+        }
+      }
     }
 
-    if (nodeObj[propNames.cdata].length === 0) {
-      delete nodeObj[propNames.cdata];
+    // Remove empty collections if compact mode is enabled
+    if (this.config.outputOptions.compact) {
+      if (!nodeObj[propNames.attributes] || Object.keys(nodeObj[propNames.attributes]).length === 0) {
+        delete nodeObj[propNames.attributes];
+      }
+
+      if (!nodeObj[propNames.cdata] || nodeObj[propNames.cdata].length === 0) {
+        delete nodeObj[propNames.cdata];
+      }
+
+      if (!nodeObj[propNames.comments] || nodeObj[propNames.comments].length === 0) {
+        delete nodeObj[propNames.comments];
+      }
+
+      if (!nodeObj[propNames.processing] || nodeObj[propNames.processing].length === 0) {
+        delete nodeObj[propNames.processing];
+      }
+
+      if (!nodeObj[propNames.children] || nodeObj[propNames.children].length === 0) {
+        delete nodeObj[propNames.children];
+      }
+      
+      // If namespace is empty and we're in compact mode, remove it
+      if (nodeObj[propNames.namespace] === "") {
+        delete nodeObj[propNames.namespace];
+      }
+      
+      // If prefix is empty and we're in compact mode, remove it
+      if (nodeObj[propNames.prefix] === "" || nodeObj[propNames.prefix] === undefined) {
+        delete nodeObj[propNames.prefix];
+      }
     }
 
-    if (nodeObj[propNames.comments].length === 0) {
-      delete nodeObj[propNames.comments];
-    }
-
-    if (nodeObj[propNames.processing].length === 0) {
-      delete nodeObj[propNames.processing];
-    }
-
-    if (nodeObj[propNames.children].length === 0) {
-      delete nodeObj[propNames.children];
-    }
-
-    // Remove empty value strings if configured
+    // Remove empty value nodes if configured
     if (
-      this.config.outputOptions.json.removeEmptyStrings &&
-      nodeObj[propNames.value] === ""
+      this.config.outputOptions.removeEmptyValueNodes &&
+      (nodeObj[propNames.value] === "" || nodeObj[propNames.value] === undefined)
     ) {
       delete nodeObj[propNames.value];
     }

@@ -207,7 +207,32 @@ class JSONToXMLConverter {
       direction: "json-to-xml",
     };
 
-    // Add attributes
+    // Check if this element should be skipped due to removeEmptyValueNodes
+    // An element should be skipped if:
+    // 1. removeEmptyValueNodes is true
+    // 2. The element has no value property (or it's empty)
+    // 3. The element has no children
+    // 4. The element has no CDATA, comments, or processing instructions
+    // 5. The element has no attributes (or only empty attributes)
+    const shouldSkipElement =
+      this.config.outputOptions.removeEmptyValueNodes &&
+      (!nodeObj[valKey] || nodeObj[valKey] === "") &&
+      (!nodeObj[childrenKey] || nodeObj[childrenKey].length === 0) &&
+      (!nodeObj[cdataKey] || nodeObj[cdataKey].length === 0) &&
+      (!nodeObj[commentsKey] || nodeObj[commentsKey].length === 0) &&
+      (!nodeObj[processingKey] || nodeObj[processingKey].length === 0) &&
+      (!nodeObj[attrsKey] || Object.keys(nodeObj[attrsKey]).length === 0);
+
+    // If the element should be skipped, return without processing further
+    if (shouldSkipElement) {
+      // Remove this element from its parent
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+      return;
+    }
+
+    // Process attributes
     if (nodeObj[attrsKey]) {
       for (const [attrName, attrObj] of Object.entries(nodeObj[attrsKey])) {
         // Skip xmlns attributes - already handled
@@ -226,6 +251,11 @@ class JSONToXMLConverter {
         // Get attribute value
         const attrVal = attrObj[valKey];
         if (attrVal === undefined) {
+          continue;
+        }
+
+        // Skip empty attribute values if removeEmptyValueNodes is enabled
+        if (this.config.outputOptions.removeEmptyValueNodes && attrVal === "") {
           continue;
         }
 
@@ -282,30 +312,35 @@ class JSONToXMLConverter {
     // Add content
     const content = nodeObj[valKey];
     if (content !== undefined && content !== null) {
-      // Format content
-      const strContent =
-        typeof content === "boolean" || typeof content === "number"
-          ? String(content)
-          : content;
+      // Skip empty content values if removeEmptyValueNodes is enabled
+      if (this.config.outputOptions.removeEmptyValueNodes && content === "") {
+        // Don't add empty content
+      } else {
+        // Format content
+        const strContent =
+          typeof content === "boolean" || typeof content === "number"
+            ? String(content)
+            : content;
 
-      // Apply transform if configured
-      const transformedContent = this.nodeProcessor.transformValue(
-        strContent,
-        context
-      );
+        // Apply transform if configured
+        const transformedContent = this.nodeProcessor.transformValue(
+          strContent,
+          context
+        );
 
-      // Add content to element
-      if (typeof transformedContent === "string") {
-        if (this.nodeProcessor.containsHtmlMarkup(transformedContent)) {
-          // Mixed content
-          if (typeof element.innerHTML !== "undefined") {
-            element.innerHTML = transformedContent;
+        // Add content to element
+        if (typeof transformedContent === "string") {
+          if (this.nodeProcessor.containsHtmlMarkup(transformedContent)) {
+            // Mixed content
+            if (typeof element.innerHTML !== "undefined") {
+              element.innerHTML = transformedContent;
+            } else {
+              element.textContent = transformedContent;
+            }
           } else {
+            // Simple text
             element.textContent = transformedContent;
           }
-        } else {
-          // Simple text
-          element.textContent = transformedContent;
         }
       }
     }
@@ -348,14 +383,33 @@ class JSONToXMLConverter {
       for (const childObj of nodeObj[childrenKey]) {
         for (const [childName, childData] of Object.entries(childObj)) {
           if (!childName.startsWith("@")) {
+            // Skip this child if removeEmptyValueNodes is enabled and the child is empty
+            if (
+              this.config.outputOptions.removeEmptyValueNodes &&
+              (!childData[valKey] || childData[valKey] === "") &&
+              (!childData[childrenKey] ||
+                childData[childrenKey].length === 0) &&
+              (!childData[cdataKey] || childData[cdataKey].length === 0) &&
+              (!childData[commentsKey] ||
+                childData[commentsKey].length === 0) &&
+              (!childData[processingKey] ||
+                childData[processingKey].length === 0) &&
+              (!childData[attrsKey] ||
+                Object.keys(childData[attrsKey]).length === 0)
+            ) {
+              continue;
+            }
+
             // Create child element
             const childEl = this.createElement(doc, childName, childData);
 
             // Process child element
             this.processElement(doc, childEl, childData, declaredNamespaces);
 
-            // Add to parent
-            element.appendChild(childEl);
+            // Only add the child to the parent if it wasn't removed during processing
+            if (childEl.parentNode !== element && childEl.parentNode === null) {
+              element.appendChild(childEl);
+            }
           }
         }
       }
