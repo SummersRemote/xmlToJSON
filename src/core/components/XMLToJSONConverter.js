@@ -41,9 +41,10 @@ class XMLToJSONConverter {
   /**
    * Process a DOM node and convert it to JSON format
    * @param {Node} node - DOM node to process
+   * @param {TransformContext} [parentContext=null] - Parent context if available
    * @returns {Object} - JSON representation of the node
    */
-  processNode(node) {
+  processNode(node, parentContext = null) {
     // Get the node name (tag name for elements)
     let nodeName = node.nodeName;
     let prefix = null;
@@ -59,12 +60,20 @@ class XMLToJSONConverter {
     const result = {};
     const nodeObj = {};
 
-    // Create context with direction (only if transform function exists)
-    const context = this.nodeProcessor.createTransformContext(
-      node,
-      nodeName,
-      "xml-to-json"
-    );
+    // Create context for this node
+    const context = this.nodeProcessor.createContext({
+      direction: parentContext ? parentContext.direction : "xml-to-json",
+      nodeName: nodeName,
+      nodeType: node.nodeType,
+      namespaceURI: node.namespaceURI || "",
+      parentContext: parentContext,
+      metadata: {
+        originalName: node.nodeName,
+        prefix: prefix,
+        hasAttributes: node.hasAttributes ? node.hasAttributes() : false,
+        hasChildNodes: node.hasChildNodes ? node.hasChildNodes() : false,
+      },
+    });
 
     // Always add namespace when preserving namespaces is enabled
     if (this.config.preserveNamespaces) {
@@ -204,9 +213,9 @@ class XMLToJSONConverter {
    * Process attributes of a node
    * @param {Object} nodeObj - Node object
    * @param {Node} node - DOM node
-   * @param {Object} context - Transform context
+   * @param {TransformContext} parentContext - Parent transform context
    */
-  processAttributes(nodeObj, node, context) {
+  processAttributes(nodeObj, node, parentContext) {
     for (let i = 0; i < node.attributes.length; i++) {
       const attr = node.attributes[i];
 
@@ -230,13 +239,24 @@ class XMLToJSONConverter {
 
       const attrObj = {};
 
-      // Apply transform to attribute value if needed
-      let attrValue = this.nodeProcessor.applyTransform(attr.value, {
-        ...context,
+      // Create attribute context
+      const attrContext = this.nodeProcessor.createContext({
+        direction: parentContext.direction,
         nodeName: attrName,
         nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
-        isAttribute: true,
+        namespaceURI: attr.namespaceURI || "",
+        parentContext: parentContext,
+        metadata: {
+          originalName: attr.name, // Store original name with prefix
+          prefix: prefix,
+        },
       });
+
+      // Apply transform to attribute value if needed
+      let attrValue = this.nodeProcessor.applyTransform(
+        attr.value,
+        attrContext
+      );
 
       // Only add value property if not empty or if we're not removing empty value nodes
       if (

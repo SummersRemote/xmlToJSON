@@ -40,13 +40,25 @@ class JSONToXMLConverter {
     // Create the root element
     const rootEl = this.createElement(doc, rootElName, rootJSON);
 
+    // Create root context
+    const rootContext = this.nodeProcessor.createContext({
+      direction: "json-to-xml",
+      nodeName: rootElName,
+      nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
+      namespaceURI: rootJSON[this.config.propNames.namespace] || "",
+      metadata: {
+        isRoot: true,
+        prefix: rootJSON[this.config.propNames.prefix] || null,
+      },
+    });
+
     // Declare namespaces on the root element if preserving them
     if (this.config.preserveNamespaces) {
       this.collectAndDeclareNamespaces(rootEl, jsonObj, declaredNamespaces);
     }
 
     // Process the root element
-    this.processElement(doc, rootEl, rootJSON, declaredNamespaces);
+    this.processElement(doc, rootEl, rootJSON, declaredNamespaces, rootContext);
 
     // Add root to document
     doc.appendChild(rootEl);
@@ -188,8 +200,15 @@ class JSONToXMLConverter {
    * @param {Element} element - Element to process
    * @param {Object} nodeObj - Element JSON object
    * @param {Map} declaredNamespaces - Map of declared namespaces
+   * @param {TransformContext} [parentContext=null] - Parent context if available
    */
-  processElement(doc, element, nodeObj, declaredNamespaces) {
+  processElement(
+    doc,
+    element,
+    nodeObj,
+    declaredNamespaces,
+    parentContext = null
+  ) {
     const nsKey = this.config.propNames.namespace;
     const prefixKey = this.config.propNames.prefix;
     const valKey = this.config.propNames.value;
@@ -199,13 +218,18 @@ class JSONToXMLConverter {
     const processingKey = this.config.propNames.processing;
     const childrenKey = this.config.propNames.children;
 
-    // Create transform context
-    const context = {
+    // Create context for this element
+    const context = this.nodeProcessor.createContext({
+      direction: parentContext ? parentContext.direction : "json-to-xml",
       nodeName: element.nodeName,
       nodeType: this.domEnv.nodeTypes.ELEMENT_NODE,
       namespaceURI: nodeObj[nsKey] || "",
-      direction: "json-to-xml",
-    };
+      parentContext: parentContext,
+      metadata: {
+        prefix: nodeObj[prefixKey] || null,
+        elementNS: element.namespaceURI,
+      },
+    });
 
     // Add attributes
     if (nodeObj[attrsKey]) {
@@ -236,16 +260,19 @@ class JSONToXMLConverter {
             : attrVal;
 
         // Create attribute context
-        const attrContext = {
+        const attrContext = this.nodeProcessor.createContext({
+          direction: context.direction,
           nodeName: attrName,
           nodeType: this.domEnv.nodeTypes.ATTRIBUTE_NODE,
-          isAttribute: true,
           namespaceURI: attrObj[nsKey] || "",
-          direction: "json-to-xml",
-        };
+          parentContext: context,
+          metadata: {
+            prefix: attrObj[prefixKey] || null,
+          },
+        });
 
         // Apply transform if configured
-        const transformedVal = this.nodeProcessor.transformValue(
+        const transformedVal = this.nodeProcessor.applyTransform(
           strVal,
           attrContext
         );
@@ -289,7 +316,7 @@ class JSONToXMLConverter {
           : content;
 
       // Apply transform if configured
-      const transformedContent = this.nodeProcessor.transformValue(
+      const transformedContent = this.nodeProcessor.applyTransform(
         strContent,
         context
       );
@@ -355,8 +382,14 @@ class JSONToXMLConverter {
             // Create child element
             const childEl = this.createElement(doc, childName, childData);
 
-            // Process child element
-            this.processElement(doc, childEl, childData, declaredNamespaces);
+            // Process child element with context
+            this.processElement(
+              doc,
+              childEl,
+              childData,
+              declaredNamespaces,
+              context
+            );
 
             // Add to parent
             element.appendChild(childEl);

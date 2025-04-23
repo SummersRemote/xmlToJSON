@@ -108,30 +108,84 @@ class NodeProcessor {
   }
 
   /**
-   * Create a context object for transform operations
-   * @param {Node} node - DOM node
-   * @param {string} nodeName - Node name
-   * @param {string} direction - Transform direction
-   * @returns {Object} - Context object
+   * @typedef {Object} TransformContext
+   * @property {string} direction - Either 'xml-to-json' or 'json-to-xml'
+   * @property {string} nodeName - The local name of the node without prefix
+   * @property {number} nodeType - The DOM node type (1=Element, 2=Attribute, etc.)
+   * @property {string} namespaceURI - The namespace URI of the node if available
+   * @property {boolean} [isAttribute] - Whether the node is an attribute
+   * @property {Object} [parentContext] - The parent node's context (optional)
+   * @property {Object} [metadata] - Additional transform-specific metadata
    */
-  createTransformContext(node, nodeName, direction) {
+
+  /**
+   * Creates a standardized transform context object
+   * @param {Object} options - Context creation options
+   * @param {string} options.direction - Transform direction ('xml-to-json' or 'json-to-xml')
+   * @param {string} options.nodeName - Node name
+   * @param {number} options.nodeType - Node type from DOM node types
+   * @param {string} [options.namespaceURI=''] - Namespace URI
+   * @param {boolean} [options.isAttribute=false] - Whether node is an attribute
+   * @param {Object} [options.parentContext=null] - Parent context
+   * @param {Object} [options.metadata={}] - Additional metadata
+   * @returns {TransformContext} The standardized context object
+   */
+  createContext(options) {
+    // Ensure required properties are present
+    if (!options.direction) {
+      console.warn(
+        'Context created without direction, defaulting to "unknown"'
+      );
+    }
+
+    if (!options.nodeName) {
+      console.warn('Context created without nodeName, defaulting to "unknown"');
+    }
+
+    if (options.nodeType === undefined) {
+      console.warn("Context created without nodeType, defaulting to 0");
+    }
+
+    // Set isAttribute automatically if nodeType is ATTRIBUTE_NODE
+    const isAttribute =
+      options.isAttribute ||
+      options.nodeType === this.domEnv.nodeTypes.ATTRIBUTE_NODE;
+
+    // Create standard context with required properties
     return {
-      nodeName: nodeName,
-      nodeType: node.nodeType || 0,
-      namespaceURI: node.namespaceURI || "",
-      attributes: node.attributes || null,
-      direction: direction,
+      direction: options.direction || "unknown",
+      nodeName: options.nodeName || "unknown",
+      nodeType: options.nodeType !== undefined ? options.nodeType : 0,
+      namespaceURI: options.namespaceURI || "",
+      isAttribute: isAttribute,
+      parentContext: options.parentContext || null,
+      metadata: options.metadata || {},
     };
   }
 
   /**
    * Apply transform to a value using the transformer pipeline
    * @param {any} value - Value to transform
-   * @param {Object} context - Transform context
+   * @param {TransformContext|Object} [contextOrOptions={}] - Transform context or options
    * @returns {any} - Transformed value
    */
-  applyTransform(value, context = {}) {
+  applyTransform(value, contextOrOptions = {}) {
     if (value === undefined || value === null) {
+      return value;
+    }
+
+    // If this is not a full context object, create one with provided options
+    const context =
+      contextOrOptions.direction && contextOrOptions.nodeName
+        ? contextOrOptions // Already a properly formed context
+        : this.createContext({
+            ...contextOrOptions,
+            direction: contextOrOptions.direction || "unknown",
+            nodeName: contextOrOptions.nodeName || "unknown",
+          });
+
+    // Skip transforming if no transformers are configured
+    if (!this.valueTransforms || this.valueTransforms.length === 0) {
       return value;
     }
 
@@ -139,7 +193,9 @@ class NodeProcessor {
 
     // Apply each transform in sequence
     for (const transform of this.valueTransforms) {
-      result = transform.process(result, context);
+      if (typeof transform.process === "function") {
+        result = transform.process(result, context);
+      }
     }
 
     return result;
