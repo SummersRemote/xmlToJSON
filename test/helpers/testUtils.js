@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+
 /**
  * Load test fixture file
  * @param {string} type - Type of fixture (xml|json)

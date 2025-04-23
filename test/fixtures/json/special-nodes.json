@@ -3,8 +3,9 @@
     "@ns": "",
     "@val": "",
     "@attrs": {},
-    "@processing": ["xml-stylesheet type=\"text/css\" href=\"style.css\""],
+    "@cdata": [],
     "@comments": [" This is a comment ", " This is another comment "],
+    "@processing": ["xml-stylesheet type=\"text/css\" href=\"style.css\""],
     "@children": [
       {
         "element": {
@@ -16,13 +17,19 @@
               "@val": "123"
             }
           },
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
           "@children": [
             {
               "data": {
                 "@ns": "",
                 "@val": "",
                 "@attrs": {},
-                "@cdata": ["<script>alert(\"This is CDATA content\");</script>"]
+                "@cdata": ["<script>alert(\"This is CDATA content\");</script>"],
+                "@comments": [],
+                "@processing": [],
+                "@children": []
               }
             }
           ]
@@ -37,7 +44,11 @@
               "@ns": "",
               "@val": "456"
             }
-          }
+          },
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
+          "@children": []
         }
       }
     ]

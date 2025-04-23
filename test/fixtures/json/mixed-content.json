@@ -3,26 +3,41 @@
     "@ns": "",
     "@val": "",
     "@attrs": {},
+    "@cdata": [],
+    "@comments": [],
+    "@processing": [],
     "@children": [
       {
         "title": {
           "@ns": "",
           "@val": "Mixed Content Example",
-          "@attrs": {}
+          "@attrs": {},
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
+          "@children": []
         }
       },
       {
         "paragraph": {
           "@ns": "",
           "@val": "This paragraph has <em>emphasized</em> text and <strong>strong</strong> text.",
-          "@attrs": {}
+          "@attrs": {},
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
+          "@children": []
         }
       },
       {
         "paragraph": {
           "@ns": "",
           "@val": "\n    Here is a list:\n    <ul>\n      <li>Item 1</li>\n      <li>Item 2</li>\n    </ul>\n  ",
-          "@attrs": {}
+          "@attrs": {},
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
+          "@children": []
         }
       }
     ]

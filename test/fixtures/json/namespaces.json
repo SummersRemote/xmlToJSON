@@ -9,6 +9,9 @@
         "@val": "http://www.w3.org/2001/XMLSchema-instance"
       }
     },
+    "@cdata": [],
+    "@comments": [],
+    "@processing": [],
     "@children": [
       {
         "soap:Header": {
@@ -16,6 +19,9 @@
           "@prefix": "soap",
           "@val": "",
           "@attrs": {},
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
           "@children": [
             {
               "auth:Credentials": {
@@ -23,13 +29,20 @@
                 "@prefix": "auth",
                 "@val": "",
                 "@attrs": {},
+                "@cdata": [],
+                "@comments": [],
+                "@processing": [],
                 "@children": [
                   {
                     "auth:Username": {
                       "@ns": "http://example.org/auth",
                       "@prefix": "auth",
                       "@val": "user123",
-                      "@attrs": {}
+                      "@attrs": {},
+                      "@cdata": [],
+                      "@comments": [],
+                      "@processing": [],
+                      "@children": []
                     }
                   },
                   {
@@ -37,7 +50,11 @@
                       "@ns": "http://example.org/auth",
                       "@prefix": "auth",
                       "@val": "ABC123",
-                      "@attrs": {}
+                      "@attrs": {},
+                      "@cdata": [],
+                      "@comments": [],
+                      "@processing": [],
+                      "@children": []
                     }
                   }
                 ]
@@ -52,6 +69,9 @@
           "@prefix": "soap",
           "@val": "",
           "@attrs": {},
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
           "@children": [
             {
               "m:GetStock": {
@@ -59,13 +79,20 @@
                 "@prefix": "m",
                 "@val": "",
                 "@attrs": {},
+                "@cdata": [],
+                "@comments": [],
+                "@processing": [],
                 "@children": [
                   {
                     "m:StockName": {
                       "@ns": "http://example.org/stock",
                       "@prefix": "m",
                       "@val": "ACME",
-                      "@attrs": {}
+                      "@attrs": {},
+                      "@cdata": [],
+                      "@comments": [],
+                      "@processing": [],
+                      "@children": []
                     }
                   },
                   {
@@ -73,7 +100,11 @@
                       "@ns": "http://example.org/stock",
                       "@prefix": "m",
                       "@val": "NYSE",
-                      "@attrs": {}
+                      "@attrs": {},
+                      "@cdata": [],
+                      "@comments": [],
+                      "@processing": [],
+                      "@children": []
                     }
                   }
                 ]

@@ -3,6 +3,9 @@
     "@ns": "",
     "@val": "",
     "@attrs": {},
+    "@cdata": [],
+    "@comments": [],
+    "@processing": [],
     "@children": [
       {
         "child": {
@@ -13,7 +16,11 @@
               "@ns": "",
               "@val": "1"
             }
-          }
+          },
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
+          "@children": []
         }
       },
       {
@@ -25,7 +32,11 @@
               "@ns": "",
               "@val": "2"
             }
-          }
+          },
+          "@cdata": [],
+          "@comments": [],
+          "@processing": [],
+          "@children": []
         }
       }
     ]
