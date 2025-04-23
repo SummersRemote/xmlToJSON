@@ -50,7 +50,7 @@ export function createTestConfig(overrides = {}) {
 
       // Output options
       outputOptions: {
-        prettyPrint: true,
+        prettyPrint: false,
         indent: 3,
         compact: false, 
         removeEmptyValueNodes: false,

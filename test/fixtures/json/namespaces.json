@@ -1,5 +1,5 @@
 {
-  "soap:Envelope": {
+  "Envelope": {
     "@ns": "http://www.w3.org/2003/05/soap-envelope",
     "@prefix": "soap",
     "@val": "",
@@ -14,7 +14,7 @@
     "@processing": [],
     "@children": [
       {
-        "soap:Header": {
+        "Header": {
           "@ns": "http://www.w3.org/2003/05/soap-envelope",
           "@prefix": "soap",
           "@val": "",
@@ -24,7 +24,7 @@
           "@processing": [],
           "@children": [
             {
-              "auth:Credentials": {
+              "Credentials": {
                 "@ns": "http://example.org/auth",
                 "@prefix": "auth",
                 "@val": "",
@@ -34,7 +34,7 @@
                 "@processing": [],
                 "@children": [
                   {
-                    "auth:Username": {
+                    "Username": {
                       "@ns": "http://example.org/auth",
                       "@prefix": "auth",
                       "@val": "user123",
@@ -46,7 +46,7 @@
                     }
                   },
                   {
-                    "auth:Token": {
+                    "Token": {
                       "@ns": "http://example.org/auth",
                       "@prefix": "auth",
                       "@val": "ABC123",
@@ -64,7 +64,7 @@
         }
       },
       {
-        "soap:Body": {
+        "Body": {
           "@ns": "http://www.w3.org/2003/05/soap-envelope",
           "@prefix": "soap",
           "@val": "",
@@ -74,7 +74,7 @@
           "@processing": [],
           "@children": [
             {
-              "m:GetStock": {
+              "GetStock": {
                 "@ns": "http://example.org/stock",
                 "@prefix": "m",
                 "@val": "",
@@ -84,7 +84,7 @@
                 "@processing": [],
                 "@children": [
                   {
-                    "m:StockName": {
+                    "StockName": {
                       "@ns": "http://example.org/stock",
                       "@prefix": "m",
                       "@val": "ACME",
@@ -96,7 +96,7 @@
                     }
                   },
                   {
-                    "m:StockExchange": {
+                    "StockExchange": {
                       "@ns": "http://example.org/stock",
                       "@prefix": "m",
                       "@val": "NYSE",
