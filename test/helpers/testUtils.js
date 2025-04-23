@@ -1,6 +1,9 @@
-// test/helpers/testUtils.js
-import fs from 'fs';
 import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * Load test fixture file
@@ -9,8 +12,8 @@ import path from 'path';
  * @returns {string|Object} - File contents as string (XML) or parsed object (JSON)
  */
 export function loadFixture(type, name) {
-  const fixturePath = path.join(__dirname, '..', 'fixtures', type, `${name}.${type}`);
-  
+  const fixturePath = path.resolve(__dirname, '..', 'fixtures', type, `${name}.${type}`);
+
   try {
     const content = fs.readFileSync(fixturePath, 'utf8');
     
@@ -33,45 +36,45 @@ export function loadFixture(type, name) {
 export function createTestConfig(overrides = {}) {
   // Base test configuration with all options specified
   const baseConfig = {
-    // Features to preserve during transformation
-    preserveNamespaces: true,
-    preserveComments: true,
-    preserveProcessingInstr: true,
-    preserveCDATA: true,
-    preserveTextNodes: true,
-    preserveWhitespace: false,
-    
-    // Value transforms (empty by default)
-    valueTransforms: [],
-    
-    // Output options
-    outputOptions: {
-      prettyPrint: true,
-      indent: 2,
-      
-      // JSON-specific options
-      json: {
-        compact: true,
-        removeEmptyStrings: true
+      // Features to preserve during transformation
+      preserveNamespaces: true,
+      preserveComments: true,
+      preserveProcessingInstr: true,
+      preserveCDATA: true,
+      preserveTextNodes: true,
+      preserveWhitespace: false,
+
+      // value transforms
+      valueTransforms: [],
+
+      // Output options
+      outputOptions: {
+        prettyPrint: true,
+        indent: 3,
+        compact: false, 
+        removeEmptyValueNodes: false,
+
+        // JSON-specific options
+        json: {
+        },
+
+        // XML-specific options
+        xml: {
+          declaration: true,
+        },
       },
-      
-      // XML-specific options
-      xml: {
-        declaration: true
-      }
-    },
-    
-    // Property names in the JSON representation
-    propNames: {
-      namespace: "@ns",
-      prefix: "@prefix",
-      value: "@val",
-      attributes: "@attrs",
-      cdata: "@cdata",
-      comments: "@comments",
-      processing: "@processing",
-      children: "@children"
-    }
+
+      // Property names in the JSON representation
+      propNames: {
+        namespace: "@ns",
+        prefix: "@prefix",
+        attributes: "@attrs",
+        value: "@val",
+        cdata: "@cdata",
+        comments: "@comments",
+        processing: "@processing",
+        children: "@children",
+      },
   };
   
   // Deep merge with overrides
