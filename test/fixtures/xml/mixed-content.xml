@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article>
+  <title>Mixed Content Example</title>
+  <paragraph>This paragraph has <em>emphasized</em> text and <strong>strong</strong> text.</paragraph>
+  <paragraph>
+    Here is a list:
+    <ul>
+      <li>Item 1</li>
+      <li>Item 2</li>
+    </ul>
+  </paragraph>
+</article>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope" 
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <soap:Header>
+    <auth:Credentials xmlns:auth="http://example.org/auth">
+      <auth:Username>user123</auth:Username>
+      <auth:Token>ABC123</auth:Token>
+    </auth:Credentials>
+  </soap:Header>
+  <soap:Body>
+    <m:GetStock xmlns:m="http://example.org/stock">
+      <m:StockName>ACME</m:StockName>
+      <m:StockExchange>NYSE</m:StockExchange>
+    </m:GetStock>
+  </soap:Body>
+</soap:Envelope>

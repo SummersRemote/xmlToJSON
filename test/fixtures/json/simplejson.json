@@ -1,0 +1,33 @@
+{
+  "root": {
+    "@ns": "",
+    "@val": "",
+    "@attrs": {},
+    "@children": [
+      {
+        "child": {
+          "@ns": "",
+          "@val": "Hello World",
+          "@attrs": {
+            "id": {
+              "@ns": "",
+              "@val": "1"
+            }
+          }
+        }
+      },
+      {
+        "child": {
+          "@ns": "",
+          "@val": "Test",
+          "@attrs": {
+            "id": {
+              "@ns": "",
+              "@val": "2"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

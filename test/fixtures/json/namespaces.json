@@ -1,0 +1,87 @@
+{
+  "soap:Envelope": {
+    "@ns": "http://www.w3.org/2003/05/soap-envelope",
+    "@prefix": "soap",
+    "@val": "",
+    "@attrs": {
+      "xmlns:xsi": {
+        "@ns": "",
+        "@val": "http://www.w3.org/2001/XMLSchema-instance"
+      }
+    },
+    "@children": [
+      {
+        "soap:Header": {
+          "@ns": "http://www.w3.org/2003/05/soap-envelope",
+          "@prefix": "soap",
+          "@val": "",
+          "@attrs": {},
+          "@children": [
+            {
+              "auth:Credentials": {
+                "@ns": "http://example.org/auth",
+                "@prefix": "auth",
+                "@val": "",
+                "@attrs": {},
+                "@children": [
+                  {
+                    "auth:Username": {
+                      "@ns": "http://example.org/auth",
+                      "@prefix": "auth",
+                      "@val": "user123",
+                      "@attrs": {}
+                    }
+                  },
+                  {
+                    "auth:Token": {
+                      "@ns": "http://example.org/auth",
+                      "@prefix": "auth",
+                      "@val": "ABC123",
+                      "@attrs": {}
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "soap:Body": {
+          "@ns": "http://www.w3.org/2003/05/soap-envelope",
+          "@prefix": "soap",
+          "@val": "",
+          "@attrs": {},
+          "@children": [
+            {
+              "m:GetStock": {
+                "@ns": "http://example.org/stock",
+                "@prefix": "m",
+                "@val": "",
+                "@attrs": {},
+                "@children": [
+                  {
+                    "m:StockName": {
+                      "@ns": "http://example.org/stock",
+                      "@prefix": "m",
+                      "@val": "ACME",
+                      "@attrs": {}
+                    }
+                  },
+                  {
+                    "m:StockExchange": {
+                      "@ns": "http://example.org/stock",
+                      "@prefix": "m",
+                      "@val": "NYSE",
+                      "@attrs": {}
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

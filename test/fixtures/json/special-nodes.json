@@ -1,0 +1,45 @@
+{
+  "root": {
+    "@ns": "",
+    "@val": "",
+    "@attrs": {},
+    "@processing": ["xml-stylesheet type=\"text/css\" href=\"style.css\""],
+    "@comments": [" This is a comment ", " This is another comment "],
+    "@children": [
+      {
+        "element": {
+          "@ns": "",
+          "@val": "",
+          "@attrs": {
+            "id": {
+              "@ns": "",
+              "@val": "123"
+            }
+          },
+          "@children": [
+            {
+              "data": {
+                "@ns": "",
+                "@val": "",
+                "@attrs": {},
+                "@cdata": ["<script>alert(\"This is CDATA content\");</script>"]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "element": {
+          "@ns": "",
+          "@val": "Normal text",
+          "@attrs": {
+            "id": {
+              "@ns": "",
+              "@val": "456"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

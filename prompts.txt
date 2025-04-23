@@ -1,0 +1,46 @@
+I would like to create jest unit tests for my library.  I would like tests to be per component.  XML and JSON instances should be stored in external fixtures and reused as appropriate.  Tests should implement a complete config and not rely on the default values.  Keep the tests at a higher level for now, providing even coverage without getting too deep into edge cases.
+Analyze and ask questions as needed.
+
+
+test/
+├── fixtures/
+│   ├── xml/
+│   │   ├── simple.xml
+│   │   ├── namespaces.xml
+│   │   ├── mixed-content.xml
+│   │   ├── special-nodes.xml
+│   │   └── books.xml
+│   └── json/
+│       ├── simple.json
+│       ├── namespaces.json
+│       ├── mixed-content.json
+│       ├── special-nodes.json
+│       └── books.json
+├── unit/
+│   ├── core/
+│   │   ├── XMLJSONTransformer.test.js
+│   │   ├── components/
+│   │   │   ├── ConfigurationManager.test.js
+│   │   │   ├── DomEnvironment.test.js
+│   │   │   ├── NodeProcessor.test.js
+│   │   │   ├── XMLToJSONConverter.test.js
+│   │   │   ├── JSONToXMLConverter.test.js
+│   │   │   ├── PathNavigator.test.js
+│   │   │   └── SchemaGenerator.test.js
+│   │   ├── transformers/
+│   │   │   ├── ValueTransformer.test.js
+│   │   │   ├── BooleanTransformer.test.js
+│   │   │   ├── NumberTransformer.test.js
+│   │   │   └── StringReplaceTransformer.test.js
+│   │   └── errors/
+│   │       └── TransformerError.test.js
+│   └── plugins/
+│       └── DateTransformer.test.js
+└── integration/
+    ├── roundtrip.test.js
+    ├── namespace-handling.test.js
+    ├── mixed-content.test.js
+    └── special-nodes.test.js
+
+
+    

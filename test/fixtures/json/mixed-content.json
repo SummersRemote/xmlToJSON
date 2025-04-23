@@ -1,0 +1,30 @@
+{
+  "article": {
+    "@ns": "",
+    "@val": "",
+    "@attrs": {},
+    "@children": [
+      {
+        "title": {
+          "@ns": "",
+          "@val": "Mixed Content Example",
+          "@attrs": {}
+        }
+      },
+      {
+        "paragraph": {
+          "@ns": "",
+          "@val": "This paragraph has <em>emphasized</em> text and <strong>strong</strong> text.",
+          "@attrs": {}
+        }
+      },
+      {
+        "paragraph": {
+          "@ns": "",
+          "@val": "\n    Here is a list:\n    <ul>\n      <li>Item 1</li>\n      <li>Item 2</li>\n    </ul>\n  ",
+          "@attrs": {}
+        }
+      }
+    ]
+  }
+}

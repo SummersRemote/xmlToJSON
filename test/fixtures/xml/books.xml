@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<library:catalog xmlns:library="http://example.org/library">
+  <library:book id="bk101">
+    <library:author>Gambardella, Matthew</library:author>
+    <library:title>XML Developer's Guide</library:title>
+    <library:genre>Computer</library:genre>
+    <library:price>44.95</library:price>
+    <library:publish_date>2000-10-01</library:publish_date>
+    <library:description>An in-depth look at creating applications with XML.</library:description>
+  </library:book>
+  <library:book id="bk102">
+    <library:author>Ralls, Kim</library:author>
+    <library:title>Midnight Rain</library:title>
+    <library:genre>Fantasy</library:genre>
+    <library:price>5.95</library:price>
+    <library:publish_date>2000-12-16</library:publish_date>
+    <library:description>A former architect battles corporate zombies.</library:description>
+  </library:book>
+</library:catalog>

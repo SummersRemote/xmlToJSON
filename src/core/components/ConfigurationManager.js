@@ -50,18 +50,16 @@ class ConfigurationManager {
       outputOptions: {
         prettyPrint: true,
         indent: 3,
-        compact: true, // Moved to global level
-        removeEmptyValueNodes: true, // Moved to global level
+        compact: true, 
+        removeEmptyValueNodes: true,
 
         // JSON-specific options
         json: {
-          // Format-specific options can go here
         },
 
         // XML-specific options
         xml: {
           declaration: true,
-          // Format-specific options can go here
         },
       },
 
@@ -114,7 +112,7 @@ class ConfigurationManager {
    * @returns {boolean} - Whether value is an object
    */
   isObject(item) {
-    return item && typeof item === "object" && !Array.isArray(item);
+    return !!item && typeof item === "object" && !Array.isArray(item);
   }
 
   /**
