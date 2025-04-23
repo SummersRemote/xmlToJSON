@@ -170,13 +170,7 @@ class XMLToJSONConverter {
         value = value.trim();
       }
 
-      // Step 1: Apply transform function if exists
       value = this.nodeProcessor.applyTransform(value, context);
-
-      // Step 2: Apply type conversions if configured
-      if (this.config.grokBoolean || this.config.grokNumber) {
-        value = this.nodeProcessor.processValue(value);
-      }
 
       nodeObj[this.config.propNames.value] = value;
     } else if (

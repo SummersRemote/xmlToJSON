@@ -44,7 +44,7 @@ class ConfigurationManager {
       preserveWhitespace: false,
 
       // value transforms
-      transformers: [],
+      valueTransforms: [],
 
       // Output options
       outputOptions: {

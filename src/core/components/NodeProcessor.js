@@ -112,11 +112,9 @@ class NodeProcessor {
    * @param {Node} node - DOM node
    * @param {string} nodeName - Node name
    * @param {string} direction - Transform direction
-   * @returns {Object|null} - Context object or null if no valueTransforms
+   * @returns {Object} - Context object
    */
   createTransformContext(node, nodeName, direction) {
-    if (!this.valueTransforms || this.valueTransforms.length === 0) return null;
-
     return {
       nodeName: nodeName,
       nodeType: node.nodeType || 0,
@@ -127,12 +125,12 @@ class NodeProcessor {
   }
 
   /**
-   * Transform a value using the transformer pipeline
+   * Apply transform to a value using the transformer pipeline
    * @param {any} value - Value to transform
    * @param {Object} context - Transform context
    * @returns {any} - Transformed value
    */
-  transformValue(value, context = {}) {
+  applyTransform(value, context = {}) {
     if (value === undefined || value === null) {
       return value;
     }
@@ -148,16 +146,6 @@ class NodeProcessor {
   }
 
   /**
-   * Apply transform to a value (alias for transformValue)
-   * @param {any} value - Value to transform
-   * @param {Object} context - Transform context
-   * @returns {any} - Transformed value
-   */
-  applyTransform(value, context) {
-    return this.transformValue(value, context);
-  }
-
-  /**
    * Check if a string contains HTML markup
    * @param {string} str - String to check
    * @returns {boolean} - Whether string contains HTML markup
@@ -166,16 +154,6 @@ class NodeProcessor {
     if (typeof str !== "string") return false;
     const hasMarkup = /<[a-z][\s\S]*>/i.test(str);
     return hasMarkup;
-  }
-
-  /**
-   * Process a value (alias for transformValue)
-   * @param {string} value - Original value to process
-   * @param {Object} context - Transform context
-   * @returns {any} - Processed value
-   */
-  processValue(value, context = {}) {
-    return this.transformValue(value, context);
   }
 }
 

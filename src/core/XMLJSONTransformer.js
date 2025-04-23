@@ -29,8 +29,9 @@ export class XMLJSONTransformer {
     // Expose configuration for backward compatibility
     this.config = this.configManager.config;
     
-    // Ensure transformers array exists
-    this.config.valueTransforms = Array.isArray(config.valueTransforms) ? config.valueTransforms : [];
+    // Ensure valueTransforms is properly initialized
+    this.config.valueTransforms = Array.isArray(config.valueTransforms) ? 
+      config.valueTransforms : [];
     
     // Initialize components
     this.nodeProcessor = new NodeProcessor(this.configManager, DOMEnvironment);
