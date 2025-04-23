@@ -1,12 +1,12 @@
 {
-  "library:catalog": {
+  "catalog": {
     "@ns": "http://example.org/library",
     "@prefix": "library",
     "@val": "",
     "@attrs": {},
     "@children": [
       {
-        "library:book": {
+        "book": {
           "@ns": "http://example.org/library",
           "@prefix": "library",
           "@val": "",
@@ -18,7 +18,7 @@
           },
           "@children": [
             {
-              "library:author": {
+              "author": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "Gambardella, Matthew",
@@ -26,7 +26,7 @@
               }
             },
             {
-              "library:title": {
+              "title": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "XML Developer's Guide",
@@ -34,7 +34,7 @@
               }
             },
             {
-              "library:genre": {
+              "genre": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "Computer",
@@ -42,7 +42,7 @@
               }
             },
             {
-              "library:price": {
+              "price": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "44.95",
@@ -50,7 +50,7 @@
               }
             },
             {
-              "library:publish_date": {
+              "publish_date": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "2000-10-01",
@@ -58,7 +58,7 @@
               }
             },
             {
-              "library:description": {
+              "description": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "An in-depth look at creating applications with XML.",
@@ -69,7 +69,7 @@
         }
       },
       {
-        "library:book": {
+        "book": {
           "@ns": "http://example.org/library",
           "@prefix": "library",
           "@val": "",
@@ -81,7 +81,7 @@
           },
           "@children": [
             {
-              "library:author": {
+              "author": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "Ralls, Kim",
@@ -89,7 +89,7 @@
               }
             },
             {
-              "library:title": {
+              "title": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "Midnight Rain",
@@ -97,7 +97,7 @@
               }
             },
             {
-              "library:genre": {
+              "genre": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "Fantasy",
@@ -105,7 +105,7 @@
               }
             },
             {
-              "library:price": {
+              "price": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "5.95",
@@ -113,7 +113,7 @@
               }
             },
             {
-              "library:publish_date": {
+              "publish_date": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "2000-12-16",
@@ -121,7 +121,7 @@
               }
             },
             {
-              "library:description": {
+              "description": {
                 "@ns": "http://example.org/library",
                 "@prefix": "library",
                 "@val": "A former architect battles corporate zombies.",
