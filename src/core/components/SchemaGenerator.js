@@ -23,54 +23,172 @@ class SchemaGenerator {
   generateSchema() {
     try {
       const propNames = this.config.propNames;
-      const compact = this.config.outputOptions?.json?.compact || false;
-      const removeEmptyStrings =
-        this.config.outputOptions?.json?.removeEmptyStrings || false;
+      const compact = this.config.outputOptions.compact || false;
+      const removeEmptyValueNodes = this.config.outputOptions.removeEmptyValueNodes || false;
       const preserveNamespaces = this.config.preserveNamespaces;
-
+      const preserveComments = this.config.preserveComments;
+      const preserveCDATA = this.config.preserveCDATA;
+      const preserveProcessingInstr = this.config.preserveProcessingInstr;
+      const preserveTextNodes = this.config.preserveTextNodes;
+  
       // Determine which properties are required based on the configuration
       const requiredProps = [];
-
+  
       if (!compact) {
-        requiredProps.push(
-          propNames.attributes,
-          propNames.cdata,
-          propNames.comments,
-          propNames.processing,
-          propNames.children
-        );
-
-        if (!removeEmptyStrings) {
+        // Only add collections as required if they're preserved in the config
+        requiredProps.push(propNames.attributes);
+        
+        if (preserveCDATA) requiredProps.push(propNames.cdata);
+        if (preserveComments) requiredProps.push(propNames.comments);
+        if (preserveProcessingInstr) requiredProps.push(propNames.processing);
+        requiredProps.push(propNames.children);
+  
+        if (!removeEmptyValueNodes && preserveTextNodes) {
           requiredProps.push(propNames.value);
-
+  
           if (preserveNamespaces) {
             requiredProps.push(propNames.namespace);
             // Note: prefix is not required as it may not be present for all elements
           }
         }
       }
-
+  
       // Create schema for element properties
       const elementProperties = {};
-
+  
       // Add namespace property if preserving namespaces
       if (preserveNamespaces) {
         elementProperties[propNames.namespace] = {
           description: "Namespace URI of the element",
           type: "string",
         };
-
+  
         // Add prefix property if preserving namespaces
         elementProperties[propNames.prefix] = {
           description: "Namespace prefix of the element",
           type: "string",
         };
       }
-
-      // Rest of the method implementation...
-      // (keep the existing code)
-
-      // Return the final schema
+  
+      // Add value property if preserving text nodes
+      if (preserveTextNodes) {
+        elementProperties[propNames.value] = {
+          description: "Text content of the element",
+          type: "string",
+        };
+      }
+  
+      // Add attributes property
+      elementProperties[propNames.attributes] = {
+        description: "Element attributes",
+        type: "object",
+        additionalProperties: {
+          type: "object",
+          properties: {
+            [propNames.value]: {
+              description: "Attribute value",
+              type: "string",
+            },
+          },
+          required: [propNames.value],
+        },
+      };
+  
+      // If preserving namespaces, add namespace properties to attribute schema
+      if (preserveNamespaces) {
+        elementProperties[propNames.attributes].additionalProperties.properties[
+          propNames.namespace
+        ] = {
+          description: "Namespace URI of the attribute",
+          type: "string",
+        };
+  
+        elementProperties[propNames.attributes].additionalProperties.properties[
+          propNames.prefix
+        ] = {
+          description: "Namespace prefix of the attribute",
+          type: "string",
+        };
+  
+        // Update required properties for attributes
+        elementProperties[propNames.attributes].additionalProperties.required.push(
+          propNames.namespace
+        );
+      }
+  
+      // Add CDATA property if preserving CDATA
+      if (preserveCDATA) {
+        elementProperties[propNames.cdata] = {
+          description: "CDATA sections within the element",
+          type: "array",
+          items: {
+            type: "string",
+          },
+        };
+      }
+  
+      // Add comments property if preserving comments
+      if (preserveComments) {
+        elementProperties[propNames.comments] = {
+          description: "Comments within the element",
+          type: "array",
+          items: {
+            type: "string",
+          },
+        };
+      }
+  
+      // Add processing instructions property if preserving them
+      if (preserveProcessingInstr) {
+        elementProperties[propNames.processing] = {
+          description: "Processing instructions within the element",
+          type: "array",
+          items: {
+            type: "string",
+          },
+        };
+      }
+  
+      // Add children property with recursive schema
+      elementProperties[propNames.children] = {
+        description: "Child elements",
+        type: "array",
+        items: {
+          type: "object",
+          patternProperties: {
+            "^[^@].*$": {
+              $ref: "#/definitions/element"
+            }
+          },
+          additionalProperties: false
+        },
+      };
+  
+      // Create element definition (will be referenced recursively)
+      const elementDefinition = {
+        type: "object",
+        properties: elementProperties,
+        required: requiredProps,
+        additionalProperties: false,
+      };
+  
+      // Build the complete schema
+      const schema = {
+        $schema: "https://json-schema.org/draft/2020-12/schema",
+        title: "XMLJSONTransformer JSON Schema",
+        description: "Schema for JSON representation of XML documents",
+        type: "object",
+        patternProperties: {
+          "^[^@].*$": {
+            $ref: "#/definitions/element"
+          }
+        },
+        additionalProperties: false,
+        definitions: {
+          element: elementDefinition,
+        },
+      };
+  
       return schema;
     } catch (error) {
       console.error(
