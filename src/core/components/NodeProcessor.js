@@ -22,6 +22,36 @@ class NodeProcessor {
   }
 
   /**
+   * Check if a node is a structural node (contains only element children and whitespace text)
+   * @param {Node} node - The DOM node to check
+   * @returns {boolean} - Whether the node is a structural node
+   */
+  isStructuralNode(node) {
+    if (
+      node.nodeType !== this.domEnv.nodeTypes.ELEMENT_NODE ||
+      !node.hasChildNodes()
+    ) {
+      return false;
+    }
+
+    let hasNonEmptyText = false;
+
+    for (let i = 0; i < node.childNodes.length; i++) {
+      const childNode = node.childNodes[i];
+
+      if (childNode.nodeType === this.domEnv.nodeTypes.TEXT_NODE) {
+        if (childNode.textContent.trim() !== "") {
+          hasNonEmptyText = true;
+          break;
+        }
+      }
+    }
+
+    // It's a structural node if it has no non-empty text nodes
+    return !hasNonEmptyText;
+  }
+
+  /**
    * Check if a node has mixed content (both text and element nodes)
    * @param {Node} node - The DOM node to check
    * @returns {boolean} - Whether the node has mixed content

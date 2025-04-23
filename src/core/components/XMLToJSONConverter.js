@@ -125,7 +125,7 @@ class XMLToJSONConverter {
     // Apply compact mode if enabled
     this.applyCompactMode(nodeObj);
 
-    // If the node is completely empty after applying compact mode and removeEmptyValueNodes, 
+    // If the node is completely empty after applying compact mode and removeEmptyValueNodes,
     // return a minimal object
     if (
       this.config.outputOptions.removeEmptyValueNodes &&
@@ -165,8 +165,10 @@ class XMLToJSONConverter {
       // Get the raw value
       let value = node.nodeValue;
 
-      // Strip leading and trailing whitespace and newlines
-      value = value.trim();
+      // Trim leading and trailing whitespace unless preserveWhitespace is true
+      if (!this.config.preserveWhitespace) {
+        value = value.trim();
+      }
 
       // Step 1: Apply transform function if exists
       value = this.nodeProcessor.applyTransform(value, context);
@@ -185,8 +187,10 @@ class XMLToJSONConverter {
       // Simple text content case
       let value = node.textContent;
 
-      // Strip leading and trailing whitespace and newlines
-      value = value.trim();
+      // Trim leading and trailing whitespace unless preserveWhitespace is true
+      if (!this.config.preserveWhitespace) {
+        value = value.trim();
+      }
 
       // Step 1: Apply transform function if exists
       value = this.nodeProcessor.applyTransform(value, context);
@@ -197,8 +201,7 @@ class XMLToJSONConverter {
       }
 
       nodeObj[this.config.propNames.value] = value;
-    } else if (this.config.preserveTextNodes) {
-      // Initialize with empty string if preserving text nodes
+    } else {
       nodeObj[this.config.propNames.value] = "";
     }
   }
@@ -272,6 +275,7 @@ class XMLToJSONConverter {
   processChildNodes(nodeObj, node, context) {
     const childNodes = [];
     let textContent = "";
+    const hasMixed = this.nodeProcessor.hasMixedContent(node);
 
     for (let i = 0; i < node.childNodes.length; i++) {
       const childNode = node.childNodes[i];
@@ -283,19 +287,29 @@ class XMLToJSONConverter {
           break;
 
         case this.domEnv.nodeTypes.TEXT_NODE:
-          // Only process text nodes if preserveTextNodes is true
+          // Handle text nodes if configured to preserve them
           if (this.config.preserveTextNodes) {
-            // Skip pure whitespace nodes if not preserving whitespace
-            if (
-              !this.config.preserveWhitespace &&
-              childNode.textContent.trim() === ""
-            ) {
+            const nodeText = childNode.textContent;
+            const hasContent = nodeText.trim() !== "";
+
+            // For mixed content, preserve all text nodes including whitespace ones
+            if (hasMixed && this.config.preserveWhitespace) {
+              textContent += nodeText;
+            }
+            // For structural nodes, skip whitespace-only text nodes
+            else if (this.nodeProcessor.isStructuralNode(node) && !hasContent) {
               continue;
             }
-
-            // For text nodes, only append non-empty content
-            const nodeText = childNode.textContent;
-            if (nodeText.trim() !== "" || this.config.preserveWhitespace) {
+            // For text-only nodes with preserveWhitespace=false, trim
+            else if (
+              !hasMixed &&
+              !this.config.preserveWhitespace &&
+              hasContent
+            ) {
+              textContent += nodeText.trim();
+            }
+            // Otherwise add the text as is
+            else if (hasContent || this.config.preserveWhitespace) {
               textContent += nodeText;
             }
           }
@@ -304,6 +318,7 @@ class XMLToJSONConverter {
         case this.domEnv.nodeTypes.CDATA_SECTION_NODE:
           // Handle CDATA sections if configured to preserve them
           if (this.config.preserveCDATA) {
+            // Always preserve CDATA content exactly, regardless of whitespace setting
             nodeObj[this.config.propNames.cdata].push(childNode.textContent);
           }
           break;
@@ -311,6 +326,7 @@ class XMLToJSONConverter {
         case this.domEnv.nodeTypes.COMMENT_NODE:
           // Handle comments if configured to preserve them
           if (this.config.preserveComments) {
+            // Always preserve comment content exactly, regardless of whitespace setting
             nodeObj[this.config.propNames.comments].push(childNode.textContent);
           }
           break;
@@ -326,37 +342,19 @@ class XMLToJSONConverter {
       }
     }
 
-    // Add text content as a value property if present and preserveTextNodes is true
+    // Add text content as a value property if present and not already set
     if (
       textContent &&
       this.config.preserveTextNodes &&
       !nodeObj[this.config.propNames.value]
     ) {
-      // Trim the accumulated text content if not preserving whitespace
-      if (!this.config.preserveWhitespace) {
-        textContent = textContent.trim();
-      }
-
       // Apply transform if needed
       textContent = this.nodeProcessor.applyTransform(textContent, context);
-
       nodeObj[this.config.propNames.value] = textContent;
     }
 
-    // Apply removeEmptyValueNodes to children if configured
-    if (this.config.outputOptions.removeEmptyValueNodes && childNodes.length > 0) {
-      // Filter out completely empty child nodes
-      const nonEmptyChildren = childNodes.filter(childNode => {
-        const childName = Object.keys(childNode)[0];
-        const childObj = childNode[childName];
-        // Keep only non-empty children
-        return Object.keys(childObj).length > 0;
-      });
-      
-      if (nonEmptyChildren.length > 0) {
-        nodeObj[this.config.propNames.children] = nonEmptyChildren;
-      }
-    } else if (childNodes.length > 0) {
+    // Add child nodes if present
+    if (childNodes.length > 0) {
       nodeObj[this.config.propNames.children] = childNodes;
     }
   }
@@ -369,9 +367,17 @@ class XMLToJSONConverter {
     const propNames = this.config.propNames;
 
     // Process attributes - remove any that have no value property if removeEmptyValueNodes is true
-    if (this.config.outputOptions.removeEmptyValueNodes && nodeObj[propNames.attributes]) {
-      for (const [attrName, attrObj] of Object.entries({...nodeObj[propNames.attributes]})) {
-        if (!attrObj.hasOwnProperty(propNames.value) || attrObj[propNames.value] === "") {
+    if (
+      this.config.outputOptions.removeEmptyValueNodes &&
+      nodeObj[propNames.attributes]
+    ) {
+      for (const [attrName, attrObj] of Object.entries({
+        ...nodeObj[propNames.attributes],
+      })) {
+        if (
+          !attrObj.hasOwnProperty(propNames.value) ||
+          attrObj[propNames.value] === ""
+        ) {
           delete nodeObj[propNames.attributes][attrName];
         }
       }
@@ -379,7 +385,10 @@ class XMLToJSONConverter {
 
     // Remove empty collections if compact mode is enabled
     if (this.config.outputOptions.compact) {
-      if (!nodeObj[propNames.attributes] || Object.keys(nodeObj[propNames.attributes]).length === 0) {
+      if (
+        !nodeObj[propNames.attributes] ||
+        Object.keys(nodeObj[propNames.attributes]).length === 0
+      ) {
         delete nodeObj[propNames.attributes];
       }
 
@@ -387,25 +396,37 @@ class XMLToJSONConverter {
         delete nodeObj[propNames.cdata];
       }
 
-      if (!nodeObj[propNames.comments] || nodeObj[propNames.comments].length === 0) {
+      if (
+        !nodeObj[propNames.comments] ||
+        nodeObj[propNames.comments].length === 0
+      ) {
         delete nodeObj[propNames.comments];
       }
 
-      if (!nodeObj[propNames.processing] || nodeObj[propNames.processing].length === 0) {
+      if (
+        !nodeObj[propNames.processing] ||
+        nodeObj[propNames.processing].length === 0
+      ) {
         delete nodeObj[propNames.processing];
       }
 
-      if (!nodeObj[propNames.children] || nodeObj[propNames.children].length === 0) {
+      if (
+        !nodeObj[propNames.children] ||
+        nodeObj[propNames.children].length === 0
+      ) {
         delete nodeObj[propNames.children];
       }
-      
+
       // If namespace is empty and we're in compact mode, remove it
       if (nodeObj[propNames.namespace] === "") {
         delete nodeObj[propNames.namespace];
       }
-      
+
       // If prefix is empty and we're in compact mode, remove it
-      if (nodeObj[propNames.prefix] === "" || nodeObj[propNames.prefix] === undefined) {
+      if (
+        nodeObj[propNames.prefix] === "" ||
+        nodeObj[propNames.prefix] === undefined
+      ) {
         delete nodeObj[propNames.prefix];
       }
     }
@@ -413,7 +434,8 @@ class XMLToJSONConverter {
     // Remove empty value nodes if configured
     if (
       this.config.outputOptions.removeEmptyValueNodes &&
-      (nodeObj[propNames.value] === "" || nodeObj[propNames.value] === undefined)
+      (nodeObj[propNames.value] === "" ||
+        nodeObj[propNames.value] === undefined)
     ) {
       delete nodeObj[propNames.value];
     }
